@@ -1,0 +1,31 @@
+email : projecttraveladventuretips@atomicmail.io
+pass : QWErty321@@
+database supabase : QWErty321@@projecttraveladventuretips@atomicmail.io
+
+seed 
+rural dawn rare left boil abandon alter idle blood secret crystal rare
+
+
+Revisi 
+
+1. nama color jadi pink
+2. Foto thumbnail jadi 4
+3. samakan jumlah hari di label foto dan deskripsi
+4. akomodasi dan transportasi perubahan nama 
+5. card baru untuk transportasi dan akomodasi
+6. manajemen produk di admin sudah di pisahkan untuk trips, akomodasi, dan transportasi
+7. teks fasilitas termasuk di ganti Harga
+8. icon check di fasilitas di ganti ke dot.
+9. di form admin untuk produk opentrips, di bagian detail perjalanan ltinerary buatkan kolom hari, jam dan deskripsi .
+10. kategori di filter sudah di benarkan + di tambahkan ke akomodasi dan transportasi
+11. tampilan lebih mobile friendly
+12. logo playstore & Appstore diperbaiki
+13. fungsi filter udah sempurna
+14. filter berada di atas dan tetap bertahan saat di scroll
+15. card produk berada 2 di tampilan mobile view
+16. di lihat di card product. 
+17. produk sesuai dengan kategori, open trip, akomodasi, dan transportasi tidak tercampur
+18. Partner Akomodasi telah di tambahkan (Hotel & Villa) - Partner Transportasi - Our Customer
+19. alamat di ganti di footer jadi temukan kami di.
+20. footer alamat sudah di ganti 
+21. manajemen ltinerary di admin sudah di ganti
