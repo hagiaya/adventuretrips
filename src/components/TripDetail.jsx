@@ -111,10 +111,10 @@ const TripDetail = ({ mobileMode = false }) => {
                     count: data.length
                 });
             } else {
-                // No reviews yet, use defaults or trip defaults
+                // No reviews yet
                 setReviewStats({
-                    rating: trip.rating || 5.0,
-                    count: trip.reviews || 0
+                    rating: 0,
+                    count: 0
                 });
             }
         };
