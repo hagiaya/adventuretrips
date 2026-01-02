@@ -130,7 +130,11 @@ const TripDetail = ({ mobileMode = false }) => {
             let rangeString = startDateStr;
 
             try {
-                const startDate = new Date(startDateStr);
+                // Fix Timezone Issue: Parse YYYY-MM-DD explicitly as local time
+                // new Date("2026-01-01") parses as UTC, which can shift to Dec 31 in Western timezones
+                const [sYear, sMonth, sDay] = startDateStr.split('-').map(Number);
+                const startDate = new Date(sYear, sMonth - 1, sDay);
+
                 if (!isNaN(startDate.getTime())) {
                     // Parse Duration (e.g. "3 Hari 2 Malam", "3D2N", "3 Days")
                     const durationStr = trip.features?.duration || trip.duration || "";
