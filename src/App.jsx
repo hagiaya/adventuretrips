@@ -47,6 +47,7 @@ import PartnerManagement from './pages/admin/PartnerManagement';
 import PaymentSettings from './pages/admin/PaymentSettings';
 import SystemSettings from './pages/admin/SystemSettings';
 import AccommodationCategoryManagement from './pages/admin/AccommodationCategoryManagement';
+import PopupManagement from './pages/admin/PopupManagement';
 
 const ScrollToTop = () => {
   const { pathname } = useLocation();
@@ -164,6 +165,7 @@ const App = () => {
           <Route element={<AdminLayout />}>
             <Route path="/admin/dashboard" element={<DashboardHome />} />
             <Route path="/admin/banners" element={<BannerManagement />} />
+            <Route path="/admin/popups" element={<PopupManagement />} />
             <Route path="/admin/products/trips" element={<ProductManagement initialProductType="Trip" />} />
             <Route path="/admin/products/stays" element={<ProductManagement initialProductType="Accommodation" />} />
             <Route path="/admin/products/transport" element={<ProductManagement initialProductType="Transportation" />} />

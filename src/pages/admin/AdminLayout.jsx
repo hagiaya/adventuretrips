@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabaseClient';
 import { useNavigate, Outlet, Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, ShoppingBag, Radio, Receipt, LogOut, Menu, X, User, Image, Settings, Crown, ChevronDown, ChevronUp, Map, Home, Truck, Plus } from 'lucide-react';
+import { LayoutDashboard, ShoppingBag, Radio, Receipt, LogOut, Menu, X, User, Image, Settings, Crown, ChevronDown, ChevronUp, Map, Home, Truck, Plus, MessageCircle } from 'lucide-react';
 
 const AdminLayout = () => {
     const navigate = useNavigate();
@@ -20,6 +20,7 @@ const AdminLayout = () => {
     const menuItems = [
         { path: '/admin/dashboard', icon: <LayoutDashboard size={20} />, label: 'Dashboard' },
         { path: '/admin/banners', icon: <Image size={20} />, label: 'Manajemen Banner' },
+        { path: '/admin/popups', icon: <MessageCircle size={20} />, label: 'Manajemen Popup' },
         {
             label: 'Manajemen Produk',
             icon: <ShoppingBag size={20} />,
