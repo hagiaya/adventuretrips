@@ -8,24 +8,51 @@ rural dawn rare left boil abandon alter idle blood secret crystal rare
 
 Revisi 
 
-1. nama color jadi pink
-2. Foto thumbnail jadi 4
-3. samakan jumlah hari di label foto dan deskripsi
-4. akomodasi dan transportasi perubahan nama 
-5. card baru untuk transportasi dan akomodasi
-6. manajemen produk di admin sudah di pisahkan untuk trips, akomodasi, dan transportasi
-7. teks fasilitas termasuk di ganti Harga
-8. icon check di fasilitas di ganti ke dot.
-9. di form admin untuk produk opentrips, di bagian detail perjalanan ltinerary buatkan kolom hari, jam dan deskripsi .
-10. kategori di filter sudah di benarkan + di tambahkan ke akomodasi dan transportasi
-11. tampilan lebih mobile friendly
-12. logo playstore & Appstore diperbaiki
-13. fungsi filter udah sempurna
-14. filter berada di atas dan tetap bertahan saat di scroll
-15. card produk berada 2 di tampilan mobile view
-16. di lihat di card product. 
-17. produk sesuai dengan kategori, open trip, akomodasi, dan transportasi tidak tercampur
-18. Partner Akomodasi telah di tambahkan (Hotel & Villa) - Partner Transportasi - Our Customer
-19. alamat di ganti di footer jadi temukan kami di.
-20. footer alamat sudah di ganti 
-21. manajemen ltinerary di admin sudah di ganti
+1. Bintang Ulasan belum ada menu buat mengatur
+2. ⁠Dimenu admin, minta di otomatis kan dalam hitungan diskon nya, agar ketika klik harga diskon berapa persennya dia otomatis ke isi harga display nya
+3. ⁠Setelah di diskon, di website gak konek secara otomatis dalam rincian pesanan, jadi klien gak tau rincian pesanan dari harga normal, setelah ditambah biaya layanan dan di diskon dari paket trip
+4. ⁠di Rincian pesanan, tanggal trip tidak sesuai, harusnya kalo pesan trip 3D, di tanggal trip rincian pesanan tercantum dari tanggal sekian ke sekian
+5. ⁠Dimenu admin,di jadwal dan meeting point, di bagian jadwal minta dibuatkan agar kita bisa pilih tanggal yang sesuai agar tidak input satu persatu
+6. ⁠di website, dibagian pilih tanggal trip, tolong buatkan tanda khusus agar ke blok sesuai dengan paket wisata 1 hari, 2 hari dan seterusnya
+7. ⁠di bagian data peserta, tolong dibuatkan formulir khusus seperti yang aku kirim ke abang, soalnya itu penting
+8. ⁠Ketika klien sudah transfer dan di Acc oleh admin, maka adakan formulir yang mereka isi beserta riwayat pesanan mereka dan kirim ke email klien
+9. ⁠kasih waktu buat klien transfer ketika klien diarahkan buat transfer dana
+10. ⁠buat note juga, dan pilihan buat klien, agar klien bisa milih tf dana 50  % atau 100%, karena gak semua klien mau tf 100%
+11. ⁠di paket wisata, logo bagikan dan Love gak bekerja sesuai tupoksinya, masih off, harusnya ketika kita klik logo bagikan, maka secara otomatis paket tersebut bisa mereka bagikan ke semua medsos baik itu wa dan lain lain
+12. ⁠Tombol Tanya Admin, belum bisa ke klik, minta tolong aktifkan kliknya agar bisa tersambung ke wa adventure 081818433490
+13. ⁠di paket wisata ada “Adventure Trips Guarantee “jaminan harga terbaik dan pelayanan standar internasional untuk setiap perjalanan anda. Minta diganti ini Adventure Trip “Good Travel for All People”
+14. ⁠buatkan menu khusus untuk admin bisa mengatur partner Akomodasi, partner transportasi, out customer
+15. ⁠Dimenu admin, dasbor belum sesuai dan belum otomatis, Belum otomatis juga kesini
+Kalau udah di Acc admin, harusnya ada dana masuk disini
+
+Dan itu minta revisi dan tambahkan lagi
+Total Pengguna
+Total Paket Wisata
+Total Akomodasi
+Total Transportasi
+
+Pendapatan Paket Wisata
+Pendapatan Akomodasi
+Pendapatan Transportasi
+16. Detail pesanan harus sesuai dengan klien yang isi formulir dan Booking paket wisata, agar admin bisa tau detail paket wisata yang klien book
+17. ⁠buatkan menu di admin dari masing masing jasa adventure seperti paket wisata, akomodasi, transportasi agar admin bisa rekap di Exel dan tau dari masing masing data klien Booking nya apa saja (ibarat seperti rekap pesanan mereka)
+
+------
+
+REVISI AKOMODASI
+
+MENU ADMIN
+1. Harus terbuat terpisah dari menu lainnya
+2. ⁠Nama Penginapan ganti ke Nama Akomodasi
+3. ⁠harga diskon dan harga display harus secara otomatis berubah ketika kita cantumkan diskon
+4. ⁠tidak ada ranting buat ulasan (minimal harus ada)
+5. ⁠Buat lembaran baru untuk type/kategori akomodasi dengan pilihan (Hotel, Villa, Resort, Glamping, Homestay, losmen, umum) disertai upload gambar min 5 dari masing masing type diatas
+6. ⁠upload Gambar (Min 5 Gambar buat akomodasi) deskripsi akomodasi, fasilitas akomodasi
+7. ⁠harga termasuk hapus saja
+8. Ketersediaan kamar & harga di kalender ditampilkan dan bisa di blok untuk semua tanggal
+9. ⁠sistem book, sama kan saja dengan open trip
+10. ⁠minimam formulir untuk hotel ada nama lengkap, no hp/wa, gmail (untuk kirim pesanan ke email klien)
+11. ⁠pengaturan harga di sesuai dengan kalender, karena Weekday dan weekend berbeda harga
+
+REVISI BUAT TAMPILAN WEBSITE BELUM BISA REVISI
+Tapi minimal ada formulir seperti yang dikirim ini 👇🏻

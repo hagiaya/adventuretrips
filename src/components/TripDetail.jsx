@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { MapPin, Star, Calendar, Clock, CheckCircle, Info, Share2, Heart, ArrowLeft, ShieldCheck, Award, Loader, Eye, ArrowRight, Upload, MessageCircle } from 'lucide-react';
+import { MapPin, Star, Calendar, Clock, CheckCircle, Info, Share2, Heart, ArrowLeft, ShieldCheck, Award, Loader, Eye, ArrowRight, Upload, MessageCircle, CreditCard } from 'lucide-react';
 import { useTrip } from '../hooks/useTrips';
 import { supabase } from '../lib/supabaseClient';
 import TripReviews from './TripReviews';
@@ -184,17 +184,40 @@ const TripDetail = ({ mobileMode = false }) => {
     }
 
     // Meeting Point Pricing Logic (Mocking "Harga beda beda")
-    let meetingPoints = [];
-    if (selectedSchedule && selectedSchedule.meetingPoints) {
-        // Mocking absolute prices based on user request "Harga bisa berubah bukan bertambah"
-        // Example: Base = 1.5jt, Meeting Point B = 2.5jt
-        meetingPoints = selectedSchedule.meetingPoints.map((mp, idx) => ({
-            name: mp,
-            price: basePrice // Fixed: Use basePrice without mock increment
-        }));
-    } else if (trip && trip.meeting_point) {
-        meetingPoints = [{ name: trip.meeting_point, price: basePrice }];
-    }
+    const meetingPoints = React.useMemo(() => {
+        let points = [];
+
+        // Prioritize Schedule-specific meeting points
+        if (selectedSchedule) {
+            // Support both camelCase (frontend app) and snake_case (standard DB)
+            const rawPoints = selectedSchedule.meetingPoints || selectedSchedule.meeting_points || [];
+
+            if (Array.isArray(rawPoints) && rawPoints.length > 0) {
+                points = rawPoints.map((mp) => {
+                    if (typeof mp === 'object' && mp.name) return mp; // Already an object with name/price
+                    if (typeof mp === 'string') return { name: mp, price: basePrice };
+                    return { name: 'Unknown Location', price: basePrice };
+                });
+            }
+        }
+
+        // Fallback: Check if global meeting_point exists (legacy support)
+        if (points.length === 0 && trip && trip.meeting_point) {
+            points = [{ name: trip.meeting_point, price: basePrice }];
+        }
+        // Fallback: Check if first schedule has meeting points (if current schedule is somehow broken but others are fine?)
+        else if (points.length === 0 && schedules.length > 0) {
+            const firstSched = schedules[0];
+            const rawPoints = firstSched.meetingPoints || firstSched.meeting_points || [];
+            if (Array.isArray(rawPoints) && rawPoints.length > 0) {
+                points = rawPoints.map((mp) => {
+                    if (typeof mp === 'object' && mp.name) return mp;
+                    return { name: mp, price: basePrice };
+                });
+            }
+        }
+        return points;
+    }, [selectedSchedule, trip, schedules, basePrice]);
 
     // Determine Base Price based on selection
     // If meeting point selected, use its price. Else use schedule base price.
@@ -205,8 +228,12 @@ const TripDetail = ({ mobileMode = false }) => {
         if (meetingPoints.length > 0 && !selectedMeetingPoint) {
             setSelectedMeetingPoint(meetingPoints[0]);
         }
-        // If schedule changes, reset or re-evaluate
-    }, [selectedScheduleIndex, trip]); // Dependent on schedule change logic
+    }, [selectedScheduleIndex, trip, meetingPoints]); // Re-run when points change
+
+    // Reset meeting point when schedule changes
+    useEffect(() => {
+        setSelectedMeetingPoint(null);
+    }, [selectedScheduleIndex]);
 
     // Sync Participant Data with Pax
     useEffect(() => {
@@ -249,9 +276,10 @@ const TripDetail = ({ mobileMode = false }) => {
 
     const currentPrice = activeBasePrice + variantPrice;
 
-    // 3. Tax Calculation (11%)
+    // 3. Tax Calculation
     const subtotal = currentPrice * pax;
-    const taxRate = 0.11;
+    // Use tax settings if available, default to 10%
+    const taxRate = (paymentSettings?.tax_percentage ?? 10) / 100;
     const taxAmount = Math.round(subtotal * taxRate);
     const totalWithTax = subtotal + taxAmount;
     const totalToPay = paymentType === 'dp' ? Math.round(totalWithTax * 0.5) : totalWithTax;
@@ -1178,7 +1206,7 @@ const TripDetail = ({ mobileMode = false }) => {
                                                     </span>
                                                 </div>
                                                 <div className="flex justify-between text-gray-500 text-xs mt-1">
-                                                    <span>Layanan, Asuransi, & Biaya Lainnya (11%)</span>
+                                                    <span>Layanan, Asuransi, & Biaya Lainnya</span>
                                                     <span>+ Rp {taxAmount.toLocaleString('id-ID')}</span>
                                                 </div>
                                             </>

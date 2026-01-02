@@ -122,6 +122,21 @@ const ProductManagement = ({ initialProductType = null }) => {
                 meetingPoints: s.meetingPoints || (meetingPoint ? [meetingPoint] : []) // Fallback to global MP if missing
             }));
 
+            // Pre-fill Set Schedule Form with data from first schedule (for convenience)
+            if (schedules.length > 0) {
+                const first = schedules[0];
+                setNewSchedule({
+                    date: '',
+                    price: first.price || '',
+                    quota: 20,
+                    booked: 0,
+                    meetingPoints: first.meetingPoints || [],
+                    weekendPrice: ''
+                });
+            } else {
+                setNewSchedule({ date: '', price: '2500000', quota: 20, booked: 0, meetingPoints: [], weekendPrice: '' });
+            }
+
             const gallery = product.gallery || (product.image_url ? [product.image_url] : []);
 
             // Infer Product Type
@@ -1087,7 +1102,29 @@ const ProductManagement = ({ initialProductType = null }) => {
                                             {/* Meeting Point Input (Col 1-4) - Only for Trips */}
                                             {formData.productType === 'Trip' && (
                                                 <div className="sm:col-span-4 space-y-2">
-                                                    <label className="text-xs text-gray-500 block">Meeting Point (Bisa &gt; 1)</label>
+                                                    <div className="flex justify-between items-end">
+                                                        <label className="text-xs text-gray-500 block">Meeting Point (Bisa &gt; 1)</label>
+                                                        {formData.schedules.length > 0 && (
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => {
+                                                                    if (newSchedule.meetingPoints.length === 0) {
+                                                                        if (!confirm("Meeting point kosong. Ini akan menghapus meeting point di semua jadwal. Lanjutkan?")) return;
+                                                                    }
+
+                                                                    const updatedSchedules = formData.schedules.map(s => ({
+                                                                        ...s,
+                                                                        meetingPoints: [...newSchedule.meetingPoints]
+                                                                    }));
+                                                                    setFormData({ ...formData, schedules: updatedSchedules });
+                                                                    alert("Meeting point berhasil diterapkan ke semua jadwal!");
+                                                                }}
+                                                                className="text-[10px] bg-blue-50 text-blue-600 px-2 py-1 rounded hover:bg-blue-100 font-bold border border-blue-200"
+                                                            >
+                                                                Terapkan ke Semua Jadwal
+                                                            </button>
+                                                        )}
+                                                    </div>
                                                     <div className="flex gap-2">
                                                         <input
                                                             type="text"
