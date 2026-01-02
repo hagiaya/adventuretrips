@@ -7,8 +7,10 @@ const AdminLayout = () => {
     const navigate = useNavigate();
     const location = useLocation();
     const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-    const [isProductMenuOpen, setIsProductMenuOpen] = useState(location.pathname.startsWith('/admin/products'));
-    const [isStayMenuOpen, setIsStayMenuOpen] = useState(location.pathname.startsWith('/admin/stays'));
+    const [isProductMenuOpen, setIsProductMenuOpen] = useState(
+        location.pathname.startsWith('/admin/products') ||
+        location.pathname.startsWith('/admin/stays')
+    );
 
     const handleLogout = async () => {
         await supabase.auth.signOut();
@@ -19,27 +21,17 @@ const AdminLayout = () => {
         { path: '/admin/dashboard', icon: <LayoutDashboard size={20} />, label: 'Dashboard' },
         { path: '/admin/banners', icon: <Image size={20} />, label: 'Manajemen Banner' },
         {
-            label: 'Input Produk Trip',
+            label: 'Manajemen Produk',
             icon: <ShoppingBag size={20} />,
             isSub: true,
             isOpen: isProductMenuOpen,
             setOpen: setIsProductMenuOpen,
-            activePath: '/admin/products',
+            activePath: '/admin/products', // Just a base for highlighting if needed, but safe to ignore for consolidated
             children: [
                 { path: '/admin/products/trips', label: 'Open Trip', icon: <Map size={16} /> },
                 { path: '/admin/products/transport', label: 'Transportasi', icon: <Truck size={16} /> },
-            ]
-        },
-        {
-            label: 'Manajemen Akomodasi',
-            icon: <Home size={20} />,
-            isSub: true,
-            isOpen: isStayMenuOpen,
-            setOpen: setIsStayMenuOpen,
-            activePath: '/admin/stays',
-            children: [
-                { path: '/admin/products/stays', label: 'Daftar Akomodasi', icon: <Home size={16} /> },
-                { path: '/admin/stays/categories', label: 'Tipe/Kategori', icon: <Plus size={16} /> },
+                { path: '/admin/products/stays', label: 'Akomodasi', icon: <Home size={16} /> },
+                { path: '/admin/stays/categories', label: 'Kategori Akomodasi', icon: <Plus size={16} /> },
             ]
         },
         { path: '/admin/news', icon: <Radio size={20} />, label: 'Manajemen Berita' },
@@ -69,7 +61,7 @@ const AdminLayout = () => {
                                 <>
                                     <button
                                         onClick={() => item.setOpen(!item.isOpen)}
-                                        className={`flex items-center justify-between w-full px-4 py-3 rounded-lg transition-colors ${location.pathname.startsWith(item.activePath) ? 'text-primary' : 'text-gray-600 hover:bg-gray-50'}`}
+                                        className={`flex items-center justify-between w-full px-4 py-3 rounded-lg transition-colors ${(item.activePath && location.pathname.startsWith(item.activePath)) || (item.children && item.children.some(child => location.pathname.startsWith(child.path))) ? 'text-primary' : 'text-gray-600 hover:bg-gray-50'}`}
                                     >
                                         <div className="flex items-center gap-3">
                                             {item.icon}
