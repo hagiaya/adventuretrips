@@ -69,7 +69,29 @@ const AccommodationDetail = ({ mobileMode = false }) => {
         if (hotel?.id) incrementView();
     }, [hotel?.id]);
 
-    // Manual Payment Only (No Snap Script Needed)
+    // Helper Calculation
+    const getBasePrice = () => {
+        if (!hotel) return 0;
+        const baseRate = parseInt((hotel.price || '').toString().replace(/[^0-9]/g, '')) || 0;
+        if (!checkInDate) return baseRate * rooms * nightDuration;
+
+        let total = 0;
+        try {
+            const startDate = parseISO(checkInDate);
+            const safeSchedules = Array.isArray(hotel.schedules) ? hotel.schedules : [];
+
+            for (let i = 0; i < nightDuration; i++) {
+                const currentDate = format(addDays(startDate, i), 'yyyy-MM-dd');
+                const schedule = safeSchedules.find(s => s.date === currentDate);
+                let dayPrice = baseRate;
+                if (schedule && schedule.price) {
+                    dayPrice = parseInt(schedule.price.toString().replace(/[^0-9]/g, '')) || baseRate;
+                }
+                total += dayPrice;
+            }
+        } catch (e) { return baseRate * rooms * nightDuration; }
+        return total * rooms;
+    };
 
     const handleBooking = async () => {
         const { data: { session } } = await supabase.auth.getSession();
@@ -94,27 +116,36 @@ const AccommodationDetail = ({ mobileMode = false }) => {
         setIsProcessing(true);
         try {
             const userId = session?.user?.id;
-            const totalPriceValue = calculateTotalValue();
-            const finalAmount = paymentType === 'dp' ? Math.round(totalPriceValue * 0.5) : totalPriceValue;
+            const basePrice = getBasePrice();
+            const taxPercentage = paymentSettings?.tax_percentage || 0;
+            const taxAmount = Math.round(basePrice * (taxPercentage / 100));
+            const totalPrice = basePrice + taxAmount;
+
+            const finalAmount = paymentType === 'dp' ? Math.round(totalPrice * 0.5) : totalPrice;
 
             const checkOut = format(addDays(new Date(checkInDate), nightDuration), 'yyyy-MM-dd');
-            const itemDesc = `${hotel.title} (${hotel.category}) - ${checkInDate} to ${checkOut} (${nightDuration} Malam) - ${rooms} Kamar. 
-Pemesanan atas nama: ${customerData.name} (${customerData.phone}) - Pay Option: ${paymentType.toUpperCase()}`;
+            // Simplified item description
+            const itemDesc = `${hotel.title} (${hotel.category})\nCheck-in: ${checkInDate}\nCheck-out: ${checkOut}\n${rooms} Kamar x ${nightDuration} Malam\nPemesan: ${customerData.name}`;
 
             const { data: transaction, error } = await supabase.from('transactions').insert({
                 product_id: hotel.id,
                 user_id: userId,
                 amount: finalAmount,
-                status: 'pending', // Temporary status
+                status: 'pending',
                 items: itemDesc,
                 payment_method: 'Pending Choice',
                 metadata: {
+                    type: 'stay',
                     customer_name: customerData.name,
                     customer_phone: customerData.phone,
                     customer_email: customerData.email,
                     check_in: checkInDate,
-                    nights: nightDuration,
-                    rooms: rooms
+                    night_duration: nightDuration,
+                    rooms: rooms,
+                    base_price: basePrice,
+                    tax_amount: taxAmount,
+                    total_price: totalPrice,
+                    is_dp: paymentType === 'dp'
                 }
             }).select().single();
 
@@ -131,37 +162,38 @@ Pemesanan atas nama: ${customerData.name} (${customerData.phone}) - Pay Option: 
     };
 
     const handlePayWithBalance = async () => {
-        const totalPrice = paymentType === 'dp' ? Math.round(calculateTotalValue() * 0.5) : calculateTotalValue();
+        const basePrice = getBasePrice();
+        const taxPercentage = paymentSettings?.tax_percentage || 0;
+        const taxAmount = Math.round(basePrice * (taxPercentage / 100));
+        const totalPrice = basePrice + taxAmount;
+        const amountToPay = paymentType === 'dp' ? Math.round(totalPrice * 0.5) : totalPrice;
 
-        if (userBalance < totalPrice) {
+        if (userBalance < amountToPay) {
             alert("Saldo tidak cukup.");
             return;
         }
 
-        if (!window.confirm(`Konfirmasi pembayaran Rp ${totalPrice.toLocaleString('id-ID')} menggunakan Saldo?`)) return;
+        if (!window.confirm(`Konfirmasi pembayaran Rp ${amountToPay.toLocaleString('id-ID')} menggunakan Saldo?`)) return;
 
         setIsProcessing(true);
         try {
-            // 1. Deduct Balance
-            const { error: balanceErr } = await supabase.from('profiles').update({ balance: userBalance - totalPrice }).eq('id', userProfile.id);
+            const { error: balanceErr } = await supabase.from('profiles').update({ balance: userBalance - amountToPay }).eq('id', userProfile.id);
             if (balanceErr) throw balanceErr;
 
-            // 2. Update Transaction
             const { error: txErr } = await supabase.from('transactions').update({
                 status: 'success',
                 payment_method: 'Saldo Dompet'
             }).eq('id', currentTransactionId);
             if (txErr) throw txErr;
 
-            // 3. Log
             await supabase.from('balance_transactions').insert({
                 user_id: userProfile.id,
-                amount: -totalPrice,
+                amount: -amountToPay,
                 type: 'debit',
                 description: `Pembayaran ${hotel.title} #${currentTransactionId.substring(0, 8).toUpperCase()}`
             });
 
-            setUserBalance(prev => prev - totalPrice);
+            setUserBalance(prev => prev - amountToPay);
             navigate(`/payment-success/${currentTransactionId}?mobile=${mobileMode}`);
         } catch (e) {
             alert("Gagal: " + e.message);
@@ -207,38 +239,11 @@ Pemesanan atas nama: ${customerData.name} (${customerData.phone}) - Pay Option: 
         policies = features.terms;
     }
 
-    const calculateTotalValue = () => {
-        if (!checkInDate) return currentPrice * rooms * nightDuration;
-
-        let total = 0;
-        try {
-            const startDate = parseISO(checkInDate);
-            if (isNaN(startDate.getTime())) return currentPrice * rooms * nightDuration;
-
-            const safeSchedules = Array.isArray(schedules) ? schedules : [];
-
-            for (let i = 0; i < nightDuration; i++) {
-                const currentDate = format(addDays(startDate, i), 'yyyy-MM-dd');
-                const schedule = safeSchedules.find(s => s.date === currentDate);
-
-                let dayPrice = currentPrice;
-                if (schedule && schedule.price) {
-                    const sPrice = schedule.price.toString().replace(/[^0-9]/g, '');
-                    dayPrice = parseInt(sPrice) || currentPrice;
-                }
-                total += dayPrice;
-            }
-        } catch (e) {
-            console.error("Total Calculation Error:", e);
-            return currentPrice * rooms * nightDuration;
-        }
-
-        return total * rooms;
-    };
-
-    const calculateTotal = () => {
-        return calculateTotalValue().toLocaleString('id-ID');
-    };
+    const basePrice = getBasePrice();
+    const taxPercentage = paymentSettings?.tax_percentage || 0;
+    const taxAmount = Math.round(basePrice * (taxPercentage / 100));
+    const totalPrice = basePrice + taxAmount;
+    const payAmount = paymentType === 'dp' ? Math.round(totalPrice * 0.5) : totalPrice;
 
     return (
         <div className={`bg-gray-50 min-h-screen pb-20 font-sans ${mobileMode ? 'max-w-md mx-auto shadow-2xl border-x border-gray-100' : ''}`}>
@@ -359,6 +364,7 @@ Pemesanan atas nama: ${customerData.name} (${customerData.phone}) - Pay Option: 
                                         onSelect={setCheckInDate}
                                         rooms={rooms}
                                         nightDuration={nightDuration}
+                                        defaultPrice={currentPrice}
                                     />
                                 </div>
 
@@ -428,16 +434,37 @@ Pemesanan atas nama: ${customerData.name} (${customerData.phone}) - Pay Option: 
                                     </div>
                                 </div>
 
-                                <div className="bg-primary/5 p-4 rounded-xl flex justify-between items-center text-sm border border-primary/10">
-                                    <div className="flex flex-col">
-                                        <span className="text-gray-600 font-medium">Total Tagihan</span>
-                                        {paymentType === 'dp' && <span className="text-[10px] text-primary font-bold">(DP 50%)</span>}
+                                {/* Rincian Pembayaran Breakdown */}
+                                <div className="bg-gray-50 p-4 rounded-xl border border-gray-100 space-y-3">
+                                    <h4 className="text-sm font-bold text-gray-900">Rincian Pembayaran</h4>
+                                    <div className="space-y-2 text-sm text-gray-600">
+                                        <div className="flex justify-between border-b border-gray-200 pb-2 mb-2">
+                                            <span>Tanggal Menginap</span>
+                                            <span className="font-bold text-gray-800">
+                                                {checkInDate ? `${format(new Date(checkInDate), 'dd MMM yyyy')} - ${format(addDays(new Date(checkInDate), nightDuration), 'dd MMM yyyy')}` : '-'}
+                                            </span>
+                                        </div>
+                                        <div className="flex justify-between">
+                                            <span>Sewa ({nightDuration} Malam, {rooms} Kamar)</span>
+                                            <span>Rp {basePrice.toLocaleString('id-ID')}</span>
+                                        </div>
+                                        {taxPercentage > 0 && (
+                                            <div className="flex justify-between">
+                                                <span>Pajak & Layanan ({taxPercentage}%)</span>
+                                                <span>Rp {taxAmount.toLocaleString('id-ID')}</span>
+                                            </div>
+                                        )}
+                                        <div className="border-t border-gray-200 pt-2 flex justify-between font-bold text-lg text-primary">
+                                            <span>Total Tagihan</span>
+                                            <span>Rp {totalPrice.toLocaleString('id-ID')}</span>
+                                        </div>
+                                        {paymentType === 'dp' && (
+                                            <div className="flex justify-between text-primary font-bold border-t border-primary/20 pt-2 mt-2">
+                                                <span>Bayar Sekarang (DP 50%)</span>
+                                                <span>Rp {payAmount.toLocaleString('id-ID')}</span>
+                                            </div>
+                                        )}
                                     </div>
-                                    <span className="font-black text-primary text-xl">
-                                        Rp {paymentType === 'dp'
-                                            ? Math.round(calculateTotalValue() * 0.5).toLocaleString('id-ID')
-                                            : calculateTotal()}
-                                    </span>
                                 </div>
 
                                 <button
@@ -450,7 +477,7 @@ Pemesanan atas nama: ${customerData.name} (${customerData.phone}) - Pay Option: 
                                             <Loader className="animate-spin" size={20} />
                                             <span>Memproses...</span>
                                         </div>
-                                    ) : 'Pesan Sekarang'}
+                                    ) : (paymentType === 'dp' ? 'Bayar DP Sekarang' : 'Pesan & Bayar')}
                                 </button>
                                 <p className="text-[10px] text-gray-400 text-center mt-2">Dengan memesan, Anda menyetujui syarat & ketentuan yang berlaku.</p>
                             </div>
@@ -470,11 +497,11 @@ Pemesanan atas nama: ${customerData.name} (${customerData.phone}) - Pay Option: 
                             <div className="bg-gray-50 p-4 rounded-xl text-sm border">
                                 <div className="flex justify-between mb-2">
                                     <span>Tagihan</span>
-                                    <span className="font-bold">Rp {(paymentType === 'dp' ? Math.round(calculateTotalValue() * 0.5) : calculateTotalValue()).toLocaleString('id-ID')}</span>
+                                    <span className="font-bold">Rp {payAmount.toLocaleString('id-ID')}</span>
                                 </div>
                                 <div className="flex justify-between text-xs pt-2 border-t font-medium">
                                     <span>Saldo Kamu</span>
-                                    <span className={userBalance >= (paymentType === 'dp' ? Math.round(calculateTotalValue() * 0.5) : calculateTotalValue()) ? 'text-green-600' : 'text-red-500'}>
+                                    <span className={userBalance >= payAmount ? 'text-green-600' : 'text-red-500'}>
                                         Rp {userBalance.toLocaleString('id-ID')}
                                     </span>
                                 </div>
@@ -482,7 +509,7 @@ Pemesanan atas nama: ${customerData.name} (${customerData.phone}) - Pay Option: 
 
                             <button
                                 onClick={handlePayWithBalance}
-                                disabled={isProcessing || userBalance < (paymentType === 'dp' ? Math.round(calculateTotalValue() * 0.5) : calculateTotalValue())}
+                                disabled={isProcessing || userBalance < payAmount}
                                 className="w-full py-4 rounded-xl font-bold border-2 transition-all flex items-center justify-between px-6 bg-primary text-white border-primary disabled:opacity-50 disabled:bg-gray-100 disabled:text-gray-400 disabled:border-gray-200"
                             >
                                 <span>Bayar pakai Saldo</span>

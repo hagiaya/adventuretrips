@@ -260,13 +260,22 @@ const TripDetail = ({ mobileMode = false }) => {
     }, [selectedSchedule, trip, schedules, basePrice]);
 
     // Determine Base Price based on selection
-    // If meeting point selected, use its price. Else use schedule base price.
-    const activeBasePrice = selectedMeetingPoint ? selectedMeetingPoint.price : basePrice;
+    // If meeting point selected, use its price. Else use lowest MP price.
+    const activeBasePrice = selectedMeetingPoint
+        ? (parseInt(selectedMeetingPoint.price) || 0)
+        : (meetingPoints.length > 0
+            ? Math.min(...meetingPoints.map(mp => parseInt(mp.price) || 0))
+            : basePrice);
 
-    // Auto-select first meeting point if none selected and available
+    // Auto-select lowest price meeting point if none selected
     useEffect(() => {
         if (meetingPoints.length > 0 && !selectedMeetingPoint) {
-            setSelectedMeetingPoint(meetingPoints[0]);
+            // Find lowest price meeting point default
+            const lowestPriceMp = meetingPoints.reduce((min, curr) =>
+                (parseInt(curr.price) || 0) < (parseInt(min.price) || 0) ? curr : min
+                , meetingPoints[0]);
+
+            setSelectedMeetingPoint(lowestPriceMp);
         }
     }, [selectedScheduleIndex, trip, meetingPoints]); // Re-run when points change
 
@@ -314,11 +323,23 @@ const TripDetail = ({ mobileMode = false }) => {
         selectedPackageName = selectedNames.join(', ');
     }
 
-    const currentPrice = activeBasePrice + variantPrice;
+    // 3. Tax & Discount Calculation
+    const discountPct = trip?.discount_percentage || 0;
 
-    // 3. Tax Calculation
-    const subtotal = currentPrice * pax;
-    // Use tax settings if available, default to 10%
+    // activeBasePrice is treated as "Harga Normal" (Before Discount)
+    const pricePerPaxNormal = activeBasePrice;
+    const pricePerPaxDiscount = Math.round(pricePerPaxNormal * (discountPct / 100));
+    const pricePerPaxFinal = pricePerPaxNormal - pricePerPaxDiscount;
+
+    // Total Price Calculation
+    const totalNormalPrice = pricePerPaxNormal * pax;
+    const totalDiscount = pricePerPaxDiscount * pax;
+    const totalVariantPrice = variantPrice * pax;
+
+    // Subtotal (Base + Variants - Discount)
+    const subtotal = (pricePerPaxFinal * pax) + totalVariantPrice;
+
+    // Tax
     const taxRate = (paymentSettings?.tax_percentage ?? 10) / 100;
     const taxAmount = Math.round(subtotal * taxRate);
     const totalWithTax = subtotal + taxAmount;
@@ -352,6 +373,7 @@ const TripDetail = ({ mobileMode = false }) => {
                 user_id: userId,
                 amount: totalToPay,
                 status: 'pending',
+                date: selectedSchedule?.date, // Save the selected date
                 items: `${trip.title} - ${selectedDateString} (${selectedPackageName}) - ${pax} Pax - MP: ${selectedMeetingPoint?.name || '-'} - (${paymentType.toUpperCase()})`,
                 participants: participantsData, // Now storing full objects
                 meeting_point: selectedMeetingPoint?.name,
@@ -1206,36 +1228,22 @@ const TripDetail = ({ mobileMode = false }) => {
 
                                     {/* Price Breakdown Logic */}
                                     {(() => {
-                                        const discountPct = trip.discount_percentage || 0;
-
-                                        // Calculate Unit Prices
-                                        const unitDisplayPrice = activeBasePrice;
-                                        let unitOriginalPrice = unitDisplayPrice;
-
-                                        if (discountPct > 0) {
-                                            unitOriginalPrice = unitDisplayPrice / ((100 - discountPct) / 100);
-                                        }
-
-                                        const totalOriginalBase = Math.round(unitOriginalPrice * pax);
-                                        const totalDiscountAmount = totalOriginalBase - (unitDisplayPrice * pax);
-                                        const totalVariant = variantPrice * pax;
-
                                         return (
                                             <>
-                                                {/* 1. Normal Price (Base) */}
+                                                {/* 1. Normal Price (Base from MP) */}
                                                 <div className="flex justify-between">
                                                     <span className="text-gray-500">Harga Normal ({pax} Pax)</span>
                                                     <span className="font-medium text-gray-900">
-                                                        Rp {totalOriginalBase.toLocaleString('id-ID')}
+                                                        Rp {totalNormalPrice.toLocaleString('id-ID')}
                                                     </span>
                                                 </div>
 
                                                 {/* 2. Package Add-ons */}
-                                                {hasPackages && totalVariant > 0 && (
+                                                {hasPackages && totalVariantPrice > 0 && (
                                                     <div className="flex justify-between text-indigo-600">
                                                         <span>Add-on ({selectedPackageName})</span>
                                                         <span className="font-medium">
-                                                            + Rp {totalVariant.toLocaleString('id-ID')}
+                                                            + Rp {totalVariantPrice.toLocaleString('id-ID')}
                                                         </span>
                                                     </div>
                                                 )}
@@ -1245,7 +1253,7 @@ const TripDetail = ({ mobileMode = false }) => {
                                                     <div className="flex justify-between text-red-500">
                                                         <span>Diskon ({discountPct}%)</span>
                                                         <span className="font-medium">
-                                                            - Rp {totalDiscountAmount.toLocaleString('id-ID')}
+                                                            - Rp {totalDiscount.toLocaleString('id-ID')}
                                                         </span>
                                                     </div>
                                                 )}

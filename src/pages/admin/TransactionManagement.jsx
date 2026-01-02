@@ -401,10 +401,9 @@ const TransactionManagement = () => {
                                         </div>
                                     </div>
                                     <div>
-                                        <label className="text-xs font-bold text-gray-400 uppercase">Pelanggan</label>
+                                        <label className="text-xs font-bold text-gray-400 uppercase">No. Order</label>
                                         <p className="font-medium text-gray-900 mt-1 flex items-center gap-2">
-                                            {/* Assuming user_id is readable or we check a users table later. For now just ID/Email string */}
-                                            {viewTransaction.user_id}
+                                            #{viewTransaction.id}
                                         </p>
                                     </div>
                                     <div>
@@ -481,6 +480,8 @@ const TransactionManagement = () => {
                                                     <th className="px-4 py-3 w-10">#</th>
                                                     <th className="px-4 py-3">Nama Lengkap</th>
                                                     <th className="px-4 py-3">No. KTP</th>
+                                                    <th className="px-4 py-3">Tgl Lahir</th>
+                                                    <th className="px-4 py-3">Jenis Kelamin</th>
                                                     <th className="px-4 py-3">No. HP</th>
                                                     <th className="px-4 py-3">Email</th>
                                                 </tr>
@@ -493,6 +494,8 @@ const TransactionManagement = () => {
                                                             <td className="px-4 py-3 text-gray-400 font-mono">{idx + 1}</td>
                                                             <td className="px-4 py-3 font-bold text-gray-900">{pax.name || '-'}</td>
                                                             <td className="px-4 py-3 text-gray-600 font-mono">{pax.ktp || '-'}</td>
+                                                            <td className="px-4 py-3 text-gray-600">{pax.dob || '-'}</td>
+                                                            <td className="px-4 py-3 text-gray-600">{pax.gender || '-'}</td>
                                                             <td className="px-4 py-3 text-gray-600">{pax.phone || '-'}</td>
                                                             <td className="px-4 py-3 text-gray-600">{pax.email || '-'}</td>
                                                         </tr>
@@ -513,7 +516,7 @@ const TransactionManagement = () => {
                                 <label className="text-xs font-bold text-gray-400 uppercase block mb-2">Rincian Harga</label>
                                 <div className="bg-white border border-gray-200 rounded-lg p-4 space-y-2 text-sm shadow-sm">
                                     <div className="flex justify-between text-gray-600">
-                                        <span>Total Tagihan (dengan PPN)</span>
+                                        <span>Total Tagihan</span>
                                         <span className="font-bold text-gray-900">Rp {Number(viewTransaction.amount).toLocaleString('id-ID')}</span>
                                     </div>
                                     <div className="pt-2 border-t border-gray-100 text-xs text-gray-400">

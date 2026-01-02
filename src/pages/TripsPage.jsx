@@ -73,7 +73,9 @@ const TripCard = ({ id, image, title, location, price, rating, category, mobileM
                                 </span>
                             </div>
                         )}
-                        <p className="text-sm md:text-lg font-bold text-primary">{price}</p>
+                        <p className="text-sm md:text-lg font-bold text-primary">
+                            {typeof price === 'number' ? `Rp ${price.toLocaleString('id-ID')}` : price}
+                        </p>
                     </div>
                     <button className="w-full bg-pink-50 text-pink-600 px-3 py-1.5 rounded-lg text-xs md:text-sm font-bold group-hover:bg-primary group-hover:text-white transition-all">
                         Lihat
@@ -191,7 +193,10 @@ const TripsPage = ({ mobileMode = false, category: propCategory }) => {
         }
 
         // 4. Price
-        const tripPrice = parseInt(trip.price.replace(/[^0-9]/g, '')) || 0;
+        const tripPrice = typeof trip.price === 'number'
+            ? trip.price
+            : (parseInt(trip.price?.toString().replace(/[^0-9]/g, '')) || 0);
+
         if (filters.minPrice && tripPrice < parseInt(filters.minPrice)) return false;
         if (filters.maxPrice && tripPrice > parseInt(filters.maxPrice)) return false;
 

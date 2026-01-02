@@ -4,6 +4,7 @@ import { MapPin, Star, Calendar, Car, Info, ArrowLeft, Fuel, Users, Settings, Ph
 import { useTrip } from '../hooks/useTrips';
 import { supabase } from '../lib/supabaseClient';
 import { format, addDays } from 'date-fns';
+import StayCalendar from '../components/StayCalendar';
 
 const TransportDetail = ({ mobileMode = false }) => {
     const { id } = useParams();
@@ -16,6 +17,7 @@ const TransportDetail = ({ mobileMode = false }) => {
     const [startDate, setStartDate] = useState('');
     const [units, setUnits] = useState(1);
     const [withDriver, setWithDriver] = useState(true); // Default with driver
+    const [customerData, setCustomerData] = useState({ name: '', phone: '', email: '' });
 
     // UI State
     const [isProcessing, setIsProcessing] = useState(false);
@@ -65,13 +67,21 @@ const TransportDetail = ({ mobileMode = false }) => {
             return;
         }
 
+        if (!customerData.name || !customerData.phone || !customerData.email) {
+            alert("Mohon lengkapi data pemesan (Nama, No HP/WA, dan Email)");
+            return;
+        }
+
         setIsProcessing(true);
         try {
             const currentPriceVal = parseInt(vehicle.price.replace(/[^0-9]/g, '')) || 0;
-            const totalPrice = currentPriceVal * units * days;
+            const basePrice = currentPriceVal * units * days;
+            const taxPercentage = paymentSettings?.tax_percentage || 0;
+            const taxAmount = Math.round(basePrice * (taxPercentage / 100));
+            const totalPrice = basePrice + taxAmount;
 
             const endDate = format(addDays(new Date(startDate), days), 'yyyy-MM-dd');
-            const itemDesc = `${vehicle.title} - ${startDate} to ${endDate} (${days} Days) - ${units} Unit(s) - ${withDriver ? 'With Driver' : 'Self Drive'}`;
+            const itemDesc = `${vehicle.title} (${vehicleType}) x ${units} Unit\n${startDate} - ${endDate} (${days} Hari)\n${withDriver ? 'With Driver' : 'Self Drive'}\nPemesan: ${customerData.name}`;
 
             const { data: transaction, error } = await supabase.from('transactions').insert({
                 product_id: vehicle.id,
@@ -79,7 +89,20 @@ const TransportDetail = ({ mobileMode = false }) => {
                 amount: totalPrice,
                 status: 'pending',
                 items: itemDesc,
-                payment_method: 'Pending Choice'
+                payment_method: 'Pending Choice',
+                metadata: {
+                    type: 'transport',
+                    customer_name: customerData.name,
+                    customer_phone: customerData.phone,
+                    customer_email: customerData.email,
+                    start_date: startDate,
+                    end_date: endDate,
+                    duration_days: days,
+                    units: units,
+                    with_driver: withDriver,
+                    base_price: basePrice,
+                    tax_amount: taxAmount
+                }
             }).select().single();
 
             if (error) throw error;
@@ -96,7 +119,10 @@ const TransportDetail = ({ mobileMode = false }) => {
 
     const handlePayWithBalance = async () => {
         const currentPriceVal = parseInt(vehicle.price.replace(/[^0-9]/g, '')) || 0;
-        const totalPrice = currentPriceVal * units * days;
+        const basePrice = currentPriceVal * units * days;
+        const taxPercentage = paymentSettings?.tax_percentage || 0;
+        const taxAmount = Math.round(basePrice * (taxPercentage / 100));
+        const totalPrice = basePrice + taxAmount;
 
         if (userBalance < totalPrice) {
             alert("Saldo tidak cukup.");
@@ -156,10 +182,10 @@ const TransportDetail = ({ mobileMode = false }) => {
     const specs = features?.specs || [];
     const includes = features?.includes || [];
     const vehicleType = features?.vehicle_type || 'Car';
-
-    const calculateTotal = () => {
-        return (currentPrice * units * days).toLocaleString('id-ID');
-    }
+    const taxPercentage = paymentSettings?.tax_percentage || 0;
+    const basePrice = currentPrice * units * days;
+    const taxAmount = Math.round(basePrice * (taxPercentage / 100));
+    const totalPrice = basePrice + taxAmount;
 
     return (
         <div className={`bg-gray-50 min-h-screen pb-20 font-sans ${mobileMode ? 'max-w-md mx-auto shadow-2xl border-x border-gray-100' : ''}`}>
@@ -228,9 +254,10 @@ const TransportDetail = ({ mobileMode = false }) => {
                     </div>
 
                     {/* Booking Card */}
+                    {/* Booking Card */}
                     <div className="lg:col-span-1">
-                        <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-6 sticky top-24">
-                            <div className="flex justify-between items-end mb-4 border-b border-gray-100 pb-4">
+                        <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6 sticky top-24">
+                            <div className="flex justify-between items-end mb-6 pb-4 border-b border-gray-100">
                                 <div>
                                     <p className="text-xs text-gray-400 decoration-double">Harga Sewa</p>
                                     <p className="text-2xl font-bold text-blue-600">Rp {currentPrice.toLocaleString()}</p>
@@ -238,54 +265,88 @@ const TransportDetail = ({ mobileMode = false }) => {
                                 </div>
                             </div>
 
-                            <div className="space-y-4">
+                            <div className="space-y-6">
+                                {/* Calendar */}
                                 <div>
-                                    <label className="block text-xs font-bold text-gray-500 mb-1">Tanggal Mulai Sewa</label>
-                                    <input
-                                        type="date"
-                                        className="w-full p-3 bg-gray-50 border rounded-lg text-sm font-bold"
-                                        value={startDate}
-                                        onChange={(e) => setStartDate(e.target.value)}
+                                    <label className="block text-sm font-bold text-gray-700 mb-2">Pilih Tanggal Mulai</label>
+                                    <StayCalendar
+                                        schedules={vehicle.schedules}
+                                        selectedDate={startDate}
+                                        onSelect={setStartDate}
+                                        defaultPrice={currentPrice}
                                     />
                                 </div>
 
+                                {/* Options */}
                                 <div className="grid grid-cols-2 gap-4">
                                     <div>
                                         <label className="block text-xs font-bold text-gray-500 mb-1">Durasi (Hari)</label>
-                                        <div className="flex items-center border rounded-lg overflow-hidden">
-                                            <button onClick={() => setDays(Math.max(1, days - 1))} className="px-3 py-2 bg-gray-100 hover:bg-gray-200">-</button>
-                                            <input type="text" className="w-full text-center text-sm font-bold p-2" value={days} readOnly />
-                                            <button onClick={() => setDays(days + 1)} className="px-3 py-2 bg-gray-100 hover:bg-gray-200">+</button>
+                                        <div className="flex items-center border border-gray-200 rounded-lg overflow-hidden">
+                                            <button onClick={() => setDays(Math.max(1, days - 1))} className="px-3 py-2 bg-gray-100 hover:bg-gray-200 font-bold">-</button>
+                                            <input type="text" className="w-full text-center text-sm font-bold p-2 outline-none" value={days} readOnly />
+                                            <button onClick={() => setDays(days + 1)} className="px-3 py-2 bg-gray-100 hover:bg-gray-200 font-bold">+</button>
                                         </div>
                                     </div>
                                     <div>
                                         <label className="block text-xs font-bold text-gray-500 mb-1">Jumlah Unit</label>
-                                        <div className="flex items-center border rounded-lg overflow-hidden">
-                                            <button onClick={() => setUnits(Math.max(1, units - 1))} className="px-3 py-2 bg-gray-100 hover:bg-gray-200">-</button>
-                                            <input type="text" className="w-full text-center text-sm font-bold p-2" value={units} readOnly />
-                                            <button onClick={() => setUnits(units + 1)} className="px-3 py-2 bg-gray-100 hover:bg-gray-200">+</button>
+                                        <div className="flex items-center border border-gray-200 rounded-lg overflow-hidden">
+                                            <button onClick={() => setUnits(Math.max(1, units - 1))} className="px-3 py-2 bg-gray-100 hover:bg-gray-200 font-bold">-</button>
+                                            <input type="text" className="w-full text-center text-sm font-bold p-2 outline-none" value={units} readOnly />
+                                            <button onClick={() => setUnits(units + 1)} className="px-3 py-2 bg-gray-100 hover:bg-gray-200 font-bold">+</button>
                                         </div>
                                     </div>
                                 </div>
 
-                                {/* Driver Toggle */}
-                                <div className="flex items-center gap-2 p-3 bg-gray-50 rounded-lg cursor-pointer max-w-full overflow-hidden" onClick={() => setWithDriver(!withDriver)}>
-                                    <div className={`w-5 h-5 rounded border border-gray-300 flex items-center justify-center bg-white ${withDriver ? 'bg-blue-600 border-blue-600' : ''}`}>
+                                {/* Driver Checkbox */}
+                                <div className="flex items-center gap-2 p-3 bg-gray-50 rounded-lg cursor-pointer border border-gray-100 hover:bg-gray-50 transition-colors" onClick={() => setWithDriver(!withDriver)}>
+                                    <div className={`w-5 h-5 rounded border flex items-center justify-center transition-colors ${withDriver ? 'bg-blue-600 border-blue-600' : 'bg-white border-gray-300'}`}>
                                         {withDriver && <CheckCircle className="text-white w-3 h-3" />}
                                     </div>
                                     <span className="text-sm font-bold text-gray-700 select-none">Termasuk Supir</span>
                                 </div>
 
-
-                                <div className="bg-blue-50 p-3 rounded-lg flex justify-between items-center text-sm">
-                                    <span className="text-gray-600">Total Sewa</span>
-                                    <span className="font-bold text-blue-600 text-lg">Rp {calculateTotal()}</span>
+                                {/* Data Pemesan */}
+                                <div className="pt-4 border-t border-gray-100">
+                                    <h4 className="text-sm font-bold text-gray-900 mb-3">Data Pemesan</h4>
+                                    <div className="space-y-3">
+                                        <input type="text" placeholder="Nama Lengkap" className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm outline-none focus:border-blue-500 transition-colors" value={customerData.name} onChange={e => setCustomerData({ ...customerData, name: e.target.value })} />
+                                        <input type="tel" placeholder="No WhatsApp" className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm outline-none focus:border-blue-500 transition-colors" value={customerData.phone} onChange={e => setCustomerData({ ...customerData, phone: e.target.value })} />
+                                        <input type="email" placeholder="Email" className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm outline-none focus:border-blue-500 transition-colors" value={customerData.email} onChange={e => setCustomerData({ ...customerData, email: e.target.value })} />
+                                    </div>
                                 </div>
 
+                                {/* Rincian Pembayaran */}
+                                <div className="bg-gray-50 p-4 rounded-xl border border-gray-100 space-y-3">
+                                    <h4 className="text-sm font-bold text-gray-900">Rincian Pembayaran</h4>
+                                    <div className="space-y-2 text-sm text-gray-600">
+                                        <div className="flex justify-between border-b border-gray-200 pb-2 mb-2">
+                                            <span>Tanggal Sewa</span>
+                                            <span className="font-bold text-gray-800">
+                                                {startDate ? `${format(new Date(startDate), 'dd MMM yyyy')} - ${format(addDays(new Date(startDate), days), 'dd MMM yyyy')}` : '-'}
+                                            </span>
+                                        </div>
+                                        <div className="flex justify-between">
+                                            <span>Sewa {units} Unit ({days} Hari)</span>
+                                            <span>Rp {basePrice.toLocaleString('id-ID')}</span>
+                                        </div>
+                                        {taxPercentage > 0 && (
+                                            <div className="flex justify-between">
+                                                <span>Pajak & Layanan ({taxPercentage}%)</span>
+                                                <span>Rp {taxAmount.toLocaleString('id-ID')}</span>
+                                            </div>
+                                        )}
+                                        <div className="border-t border-gray-200 pt-2 flex justify-between font-bold text-lg text-blue-600">
+                                            <span>Total</span>
+                                            <span>Rp {totalPrice.toLocaleString('id-ID')}</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Button */}
                                 <button
                                     onClick={handleBooking}
                                     disabled={isProcessing}
-                                    className="w-full bg-blue-600 text-white font-bold py-3.5 rounded-xl hover:bg-blue-700 transition-all shadow-lg shadow-blue-500/30"
+                                    className="w-full bg-blue-600 text-white font-bold py-4 rounded-xl hover:bg-blue-700 transition-all shadow-lg shadow-blue-500/30 disabled:opacity-50"
                                 >
                                     {isProcessing ? 'Memproses...' : 'Booking Rental'}
                                 </button>
@@ -306,11 +367,11 @@ const TransportDetail = ({ mobileMode = false }) => {
                             <div className="bg-gray-50 p-4 rounded-xl text-sm border">
                                 <div className="flex justify-between mb-2">
                                     <span>Tagihan</span>
-                                    <span className="font-bold">Rp {(parseInt(vehicle.price.replace(/[^0-9]/g, '')) * units * days).toLocaleString('id-ID')}</span>
+                                    <span className="font-bold">Rp {totalPrice.toLocaleString('id-ID')}</span>
                                 </div>
                                 <div className="flex justify-between text-xs pt-2 border-t font-medium">
                                     <span>Saldo Kamu</span>
-                                    <span className={userBalance >= (parseInt(vehicle.price.replace(/[^0-9]/g, '')) * units * days) ? 'text-green-600' : 'text-red-500'}>
+                                    <span className={userBalance >= totalPrice ? 'text-green-600' : 'text-red-500'}>
                                         Rp {userBalance.toLocaleString('id-ID')}
                                     </span>
                                 </div>
@@ -318,7 +379,7 @@ const TransportDetail = ({ mobileMode = false }) => {
 
                             <button
                                 onClick={handlePayWithBalance}
-                                disabled={isProcessing || userBalance < (parseInt(vehicle.price.replace(/[^0-9]/g, '')) * units * days)}
+                                disabled={isProcessing || userBalance < totalPrice}
                                 className="w-full py-4 rounded-xl font-bold border-2 transition-all flex items-center justify-between px-6 bg-primary text-white border-primary disabled:opacity-50 disabled:bg-gray-100 disabled:text-gray-400 disabled:border-gray-200"
                             >
                                 <span>Bayar pakai Saldo</span>

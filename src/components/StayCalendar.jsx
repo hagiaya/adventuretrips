@@ -3,7 +3,7 @@ import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSam
 import { id as idLocale } from 'date-fns/locale';
 import { ChevronLeft, ChevronRight, Lock } from 'lucide-react';
 
-const StayCalendar = ({ schedules, selectedDate, onSelect, rooms = 1, nightDuration = 1 }) => {
+const StayCalendar = ({ schedules, selectedDate, onSelect, rooms = 1, nightDuration = 1, defaultPrice = 0 }) => {
     const [currentMonth, setCurrentMonth] = useState(new Date());
 
     useEffect(() => {
@@ -52,13 +52,18 @@ const StayCalendar = ({ schedules, selectedDate, onSelect, rooms = 1, nightDurat
                 {daysInMonth.map((day, i) => {
                     const dateStr = format(day, 'yyyy-MM-dd');
                     const safeSchedules = Array.isArray(schedules) ? schedules : [];
+                    const hasSchedules = safeSchedules.length > 0;
                     const schedule = safeSchedules.find(s => s.date === dateStr);
 
                     const remaining = schedule ? (parseInt(schedule.quota) - (parseInt(schedule.booked) || 0)) : 0;
-                    const isAvailable = schedule && remaining >= rooms;
+                    // If schedules exist, strictly follow them. If not, open availability.
+                    const isAvailable = hasSchedules ? (schedule && remaining >= rooms) : true;
                     const isSelected = selectedDate === dateStr;
                     const isToday = isSameDay(day, new Date());
                     const isPast = day < new Date(new Date().setHours(0, 0, 0, 0));
+
+                    // Disable past dates always
+                    const isClickable = isAvailable && !isPast;
 
                     // Check if day is within stay range
                     let isInRange = false;
@@ -69,21 +74,22 @@ const StayCalendar = ({ schedules, selectedDate, onSelect, rooms = 1, nightDurat
                     }
 
                     let containerClass = "bg-white h-20 md:h-24 p-1.5 flex flex-col items-center justify-start relative transition-all group overflow-hidden";
-                    if (isAvailable && !isPast) containerClass += " cursor-pointer hover:bg-primary/5";
-                    else if (schedule && !isAvailable) containerClass += " bg-red-50/30 cursor-not-allowed";
-                    else if (isPast) containerClass += " opacity-40 cursor-not-allowed";
+                    if (isClickable) containerClass += " cursor-pointer hover:bg-primary/5";
+                    else if (hasSchedules && !isAvailable && !isPast) containerClass += " bg-red-50/30 cursor-not-allowed"; // Full schedule
+                    else if (isPast) containerClass += " opacity-40 cursor-not-allowed"; // Past date
+                    else containerClass += " cursor-pointer hover:bg-primary/5"; // Implicit available
 
                     let dateClass = "w-7 h-7 flex items-center justify-center rounded-full text-xs font-bold transition-all z-10";
                     if (isSelected) dateClass += " bg-primary text-white shadow-lg shadow-pink-200 scale-110";
                     else if (isToday) dateClass += " border border-primary text-primary";
                     else if (isInRange) dateClass += " bg-primary/10 text-primary";
-                    else if (schedule && isAvailable) dateClass += " text-gray-700 bg-gray-50 group-hover:bg-primary/20";
+                    else if (isClickable) dateClass += " text-gray-700 bg-gray-50 group-hover:bg-primary/20";
                     else dateClass += " text-gray-300";
 
                     return (
                         <div
                             key={i}
-                            onClick={() => !isPast && isAvailable && onSelect(dateStr)}
+                            onClick={() => isClickable && onSelect(dateStr)}
                             className={containerClass}
                         >
                             {isInRange && !isSelected && <div className="absolute inset-0 bg-primary/5 z-0"></div>}
@@ -106,8 +112,18 @@ const StayCalendar = ({ schedules, selectedDate, onSelect, rooms = 1, nightDurat
                                     )}
                                 </div>
                             ) : !isPast && (
-                                <div className="mt-auto pb-2 z-10">
-                                    <span className="text-[8px] text-gray-300 italic">No Data</span>
+                                <div className="mt-auto pb-2 z-10 w-full text-center">
+                                    {hasSchedules ? (
+                                        <span className="text-[8px] text-gray-300 italic">No Data</span>
+                                    ) : (
+                                        <div className="flex flex-col">
+                                            {defaultPrice > 0 && (
+                                                <span className="text-[10px] font-black text-primary">
+                                                    Rp {(defaultPrice / 1000).toLocaleString()}k
+                                                </span>
+                                            )}
+                                        </div>
+                                    )}
                                 </div>
                             )}
                         </div>

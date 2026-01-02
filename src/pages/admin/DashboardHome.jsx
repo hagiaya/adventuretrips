@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabaseClient';
-import { Users, ShoppingBag, CreditCard, Radio, TrendingUp, Loader, ArrowRight, Image, Calendar as CalendarIcon, Filter } from 'lucide-react';
+import { Users, ShoppingBag, CreditCard, Radio, TrendingUp, Loader, ArrowRight, Image, Calendar as CalendarIcon, Filter, Car } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { format } from 'date-fns';
 import { id } from 'date-fns/locale';
@@ -142,6 +142,13 @@ const DashboardHome = () => {
             description: 'Hotel/Villa'
         },
         {
+            label: 'Total Transportasi',
+            value: stats.transportation,
+            icon: <Car className="text-amber-600" />,
+            bg: 'bg-amber-50',
+            description: 'Unit Kendaraan'
+        },
+        {
             label: 'Private Trips',
             value: stats.privateTrips,
             icon: <TrendingUp className="text-indigo-600" />,
@@ -168,21 +175,7 @@ const DashboardHome = () => {
             icon: <CreditCard className="text-red-600" />,
             bg: 'bg-red-50',
             description: 'Gagal/Expired'
-        },
-        {
-            label: 'Berita Terpublish',
-            value: stats.news,
-            icon: <Radio className="text-orange-600" />,
-            bg: 'bg-orange-50',
-            description: 'Update berita'
-        },
-        {
-            label: 'Total Promo',
-            value: stats.promos,
-            icon: <Image className="text-rose-600" />,
-            bg: 'bg-rose-50',
-            description: 'Banner aktif'
-        },
+        }
     ];
 
     return (
