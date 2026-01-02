@@ -1280,7 +1280,20 @@ const ProductManagement = ({ initialProductType = null }) => {
                                                 </div>
                                             </div>
 
-                                            <div className="sm:col-span-12 flex justify-end">
+                                            <div className="sm:col-span-12 flex justify-end gap-3">
+                                                {formData.schedules.length > 0 && (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                            if (confirm("Yakin ingin menghapus SEMUA jadwal?")) {
+                                                                setFormData(prev => ({ ...prev, schedules: [] }));
+                                                            }
+                                                        }}
+                                                        className="bg-red-50 text-red-600 border border-red-200 py-2 px-4 rounded-lg hover:bg-red-100 text-sm font-medium transition-colors"
+                                                    >
+                                                        Hapus Semua Jadwal
+                                                    </button>
+                                                )}
                                                 <button
                                                     type="button"
                                                     onClick={() => {
