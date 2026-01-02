@@ -741,8 +741,16 @@ const TripDetail = ({ mobileMode = false }) => {
                             <div className="flex items-center gap-4 text-sm">
                                 <div className="flex items-center">
                                     <Star className="w-5 h-5 text-yellow-400 fill-yellow-400 mr-1" />
-                                    <span className="font-bold text-gray-900 mr-1">{reviewStats.rating || rating}</span>
-                                    <span className="text-gray-500">({reviewStats.count || reviews} reviews)</span>
+                                    <span className="font-bold text-gray-900 mr-1">
+                                        {/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(trip.id)
+                                            ? reviewStats.rating
+                                            : rating}
+                                    </span>
+                                    <span className="text-gray-500">
+                                        ({/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(trip.id)
+                                            ? reviewStats.count
+                                            : reviews} reviews)
+                                    </span>
                                 </div>
                                 <div className="flex items-center gap-1 text-gray-500">
                                     <Clock className="w-4 h-4" />
