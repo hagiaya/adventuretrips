@@ -79,6 +79,8 @@ const TripDetail = ({ mobileMode = false }) => {
 
     // State for local view count to allow immediate updates
     const [viewCount, setViewCount] = useState(0);
+    const [reviewStats, setReviewStats] = useState({ rating: 0, count: 0 });
+    const [statsRefreshTrigger, setStatsRefreshTrigger] = useState(0);
 
     // Sync viewCount when trip data loads
     useEffect(() => {
@@ -87,12 +89,46 @@ const TripDetail = ({ mobileMode = false }) => {
         }
     }, [trip]);
 
+    // Fetch Review Stats
+    useEffect(() => {
+        const fetchReviewStats = async () => {
+            if (!trip?.id) return;
+
+            // Check UUID format
+            const isUuid = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(trip.id);
+            if (!isUuid) return; // Static ID, stick to mock data if any
+
+            const { data, error } = await supabase
+                .from('reviews')
+                .select('rating')
+                .eq('product_id', trip.id);
+
+            if (!error && data && data.length > 0) {
+                const totalRating = data.reduce((acc, curr) => acc + (curr.rating || 0), 0);
+                const avgRating = totalRating / data.length;
+                setReviewStats({
+                    rating: parseFloat(avgRating.toFixed(1)),
+                    count: data.length
+                });
+            } else {
+                // No reviews yet, use defaults or trip defaults
+                setReviewStats({
+                    rating: trip.rating || 5.0,
+                    count: trip.reviews || 0
+                });
+            }
+        };
+
+        fetchReviewStats();
+    }, [trip?.id, statsRefreshTrigger]);
+
     // Increment View Count
     useEffect(() => {
         const incrementView = async () => {
             if (trip?.id) {
                 console.log("Incrementing view for trip:", trip.id);
                 const { error } = await supabase.rpc('increment_product_view', { p_id: trip.id });
+                //...
 
                 if (error) {
                     console.error("Failed to increment view:", error);
@@ -705,8 +741,8 @@ const TripDetail = ({ mobileMode = false }) => {
                             <div className="flex items-center gap-4 text-sm">
                                 <div className="flex items-center">
                                     <Star className="w-5 h-5 text-yellow-400 fill-yellow-400 mr-1" />
-                                    <span className="font-bold text-gray-900 mr-1">{rating}</span>
-                                    <span className="text-gray-500">({reviews} reviews)</span>
+                                    <span className="font-bold text-gray-900 mr-1">{reviewStats.rating || rating}</span>
+                                    <span className="text-gray-500">({reviewStats.count || reviews} reviews)</span>
                                 </div>
                                 <div className="flex items-center gap-1 text-gray-500">
                                     <Clock className="w-4 h-4" />
@@ -874,7 +910,11 @@ const TripDetail = ({ mobileMode = false }) => {
                             )}
 
                             {activeTab === 'ulasan' && (
-                                <TripReviews tripId={trip.id} initialReviews={trip.reviewsList} onReviewSubmitted={refetch} />
+                                <TripReviews
+                                    tripId={trip.id}
+                                    // initialReviews={trip.reviewsList} 
+                                    onReviewSubmitted={() => setStatsRefreshTrigger(prev => prev + 1)}
+                                />
                             )}
                         </div>
                     </div>
