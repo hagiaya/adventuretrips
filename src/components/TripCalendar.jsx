@@ -153,11 +153,11 @@ const TripCalendar = ({ schedules, selectedIndex, onSelect, duration }) => {
                     } else {
                         // No Schedule here, but check if it's in the calculated range of the selected trip
                         if (isRangeMiddle) {
-                            containerClass += " bg-green-50/60";
-                            dateClass += " text-green-800 font-medium";
+                            containerClass += " !bg-green-100 border-y border-green-500/20"; // Consistent green block
+                            dateClass += " bg-green-600 text-white font-bold";
                         } else if (isRangeEnd) {
-                            containerClass += " bg-green-50/60 rounded-r-md border-r-2 border-green-200";
-                            dateClass += " text-green-800 font-medium bg-green-100 rounded-full";
+                            containerClass += " !bg-green-100 rounded-r-md border-y border-r border-green-500/20"; // Consistent green block
+                            dateClass += " bg-green-600 text-white font-bold";
                         } else {
                             dateClass += " text-gray-300";
                         }
