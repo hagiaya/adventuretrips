@@ -65,6 +65,7 @@ const ProductManagement = ({ initialProductType = null }) => {
             const { data, error } = await supabase
                 .from('products')
                 .select('*')
+                .eq('is_deleted', false)
                 .order('created_at', { ascending: false });
 
             if (error) throw error;
@@ -280,6 +281,50 @@ const ProductManagement = ({ initialProductType = null }) => {
         setNewSchedule({ date: '', price: '', quota: 20, booked: 0, meetingPoints: [], weekendPrice: '' });
     };
 
+    // Auto-calculate prices whenever schedules or discount changes
+    useEffect(() => {
+        calculatePrices();
+    }, [formData.schedules, formData.discount_percentage]);
+
+    const calculatePrices = () => {
+        const schedules = formData.schedules || [];
+        const discount = parseFloat(formData.discount_percentage || '0');
+
+        let minPrice = Infinity;
+
+        if (schedules.length > 0) {
+            schedules.forEach(sched => {
+                // Check Schedule Price
+                const schedPrice = parseInt(sched.price?.toString().replace(/[^0-9]/g, '') || '0');
+                if (schedPrice > 0 && schedPrice < minPrice) minPrice = schedPrice;
+
+                // Check Meeting Points (if they have individual prices - though UI only allows strings now, 
+                // in some complex cases MP can have price. Use Schedule Price as fallback base)
+            });
+        }
+
+        if (minPrice === Infinity) minPrice = 0;
+
+        // Auto Update Original Price
+        const newOriginalPrice = minPrice > 0 ? 'Rp ' + minPrice.toLocaleString('id-ID') : '';
+
+        // Auto Update Display Price
+        let newDisplayPrice = newOriginalPrice;
+        if (minPrice > 0 && !isNaN(discount) && discount > 0 && discount < 100) {
+            const calculated = minPrice * ((100 - discount) / 100);
+            newDisplayPrice = 'Rp ' + Math.round(calculated).toLocaleString('id-ID');
+        }
+
+        // Only update if different to avoid loop/jitter
+        if (newOriginalPrice !== formData.originalPrice || newDisplayPrice !== formData.price) {
+            setFormData(prev => ({
+                ...prev,
+                originalPrice: newOriginalPrice,
+                price: newDisplayPrice
+            }));
+        }
+    };
+
     const removeSchedule = (index) => {
         const newSchedules = [...formData.schedules];
         newSchedules.splice(index, 1);
@@ -472,7 +517,7 @@ const ProductManagement = ({ initialProductType = null }) => {
         if (!confirm('Apakah Anda yakin ingin menghapus produk ini?')) return;
 
         try {
-            const { error } = await supabase.from('products').delete().eq('id', id);
+            const { error } = await supabase.from('products').update({ is_deleted: true }).eq('id', id);
             if (error) throw error;
             fetchProducts();
         } catch (error) {
@@ -755,47 +800,24 @@ const ProductManagement = ({ initialProductType = null }) => {
                                             <label className="block text-sm font-medium text-gray-700 mb-1">Harga Normal / Coret (Bila ada diskon)</label>
                                             <input
                                                 type="text"
-                                                className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary/20 outline-none"
-                                                placeholder="Contoh: Rp 1.500.000"
+                                                className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary/20 outline-none bg-gray-100 text-gray-500"
+                                                placeholder="Otomatis dari Jadwal Termurah"
                                                 value={formData.originalPrice}
-                                                onChange={e => {
-                                                    const val = e.target.value.replace(/[^0-9]/g, '');
-                                                    const numPrice = parseInt(val || '0');
-                                                    const formatted = val ? 'Rp ' + numPrice.toLocaleString('id-ID') : '';
-
-                                                    // Auto-calculate Display Price based on Normal Price and Discount
-                                                    const discount = parseFloat(formData.discount_percentage || '0');
-
-                                                    let newDisplayPrice = formData.price;
-                                                    if (!isNaN(numPrice) && !isNaN(discount) && discount > 0 && discount < 100) {
-                                                        const calculated = numPrice * ((100 - discount) / 100);
-                                                        newDisplayPrice = 'Rp ' + Math.round(calculated).toLocaleString('id-ID');
-                                                    } else {
-                                                        newDisplayPrice = formatted; // If no discount, display price is the same as normal price
-                                                    }
-
-                                                    setFormData({ ...formData, originalPrice: formatted, price: newDisplayPrice });
-                                                }}
+                                                readOnly
                                             />
+                                            <p className="text-[10px] text-gray-400 mt-1">Diambil dari harga jadwal terendah</p>
                                         </div>
 
                                         <div>
                                             <label className="block text-sm font-medium text-gray-700 mb-1">Harga Tampilan (Harga Jual)</label>
                                             <input
                                                 type="text"
-                                                className={`w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary/20 outline-none ${formData.discount_percentage > 0 ? 'bg-gray-50' : ''}`}
-                                                placeholder="Contoh: Rp 1.000.000"
+                                                className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary/20 outline-none bg-gray-100 text-green-600 font-bold"
+                                                placeholder="Otomatis (Harga Normal - Diskon)"
                                                 value={formData.price}
-                                                readOnly={formData.discount_percentage > 0}
-                                                onChange={e => {
-                                                    if (formData.discount_percentage > 0) return; // Prevent manual edit if discount is active
-                                                    const val = e.target.value.replace(/[^0-9]/g, '');
-                                                    const numPrice = parseInt(val || '0');
-                                                    const formatted = val ? 'Rp ' + numPrice.toLocaleString('id-ID') : '';
-                                                    setFormData({ ...formData, price: formatted, originalPrice: formatted }); // Sync original price if no discount
-                                                }}
+                                                readOnly
                                             />
-                                            {formData.discount_percentage > 0 && <p className="text-[10px] text-primary italic mt-1 font-bold">Terkunci karena diskon aktif</p>}
+                                            <p className="text-[10px] text-gray-400 mt-1">Harga final setelah diskon</p>
                                         </div>
 
                                         <div>
@@ -808,26 +830,9 @@ const ProductManagement = ({ initialProductType = null }) => {
                                                 placeholder="Contoh: 10"
                                                 value={formData.discount_percentage || ''}
                                                 onChange={e => {
-                                                    const val = e.target.value;
-                                                    const discount = parseFloat(val);
-
-                                                    const cleanNormal = (formData.originalPrice || '').replace(/[^0-9]/g, '');
-                                                    const numNormal = parseInt(cleanNormal || '0');
-
-                                                    let newDisplayPrice = formData.price;
-                                                    if (!isNaN(numNormal) && !isNaN(discount) && discount > 0 && discount < 100) {
-                                                        const calculated = numNormal * ((100 - discount) / 100);
-                                                        newDisplayPrice = 'Rp ' + Math.round(calculated).toLocaleString('id-ID');
-                                                    } else if (numNormal > 0) {
-                                                        newDisplayPrice = 'Rp ' + numNormal.toLocaleString('id-ID'); // If no discount, display price is normal price
-                                                    } else {
-                                                        newDisplayPrice = ''; // Clear if normal price is 0
-                                                    }
-
                                                     setFormData({
                                                         ...formData,
-                                                        discount_percentage: val,
-                                                        price: newDisplayPrice
+                                                        discount_percentage: e.target.value
                                                     });
                                                 }}
                                             />

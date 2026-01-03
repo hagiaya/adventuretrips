@@ -28,10 +28,21 @@ const SystemSettings = () => {
         setLoading(true);
         try {
             // Delete all rows safely using a generic condition that works for Int and UUID
-            const { error } = await supabase
-                .from(table)
-                .delete()
-                .not('id', 'is', null);
+            // Delete all rows safely using a generic condition that works for Int and UUID
+            let error;
+            if (table === 'products') {
+                const { error: updateError } = await supabase
+                    .from(table)
+                    .update({ is_deleted: true })
+                    .not('id', 'is', null);
+                error = updateError;
+            } else {
+                const { error: deleteError } = await supabase
+                    .from(table)
+                    .delete()
+                    .not('id', 'is', null);
+                error = deleteError;
+            }
 
             if (error) throw error;
 

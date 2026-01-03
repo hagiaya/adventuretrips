@@ -32,7 +32,7 @@ const DashboardHome = () => {
             const { count: userCount } = await supabase.from('profiles').select('*', { count: 'exact', head: true });
 
             // 2. Fetch Products and categorize
-            const { data: allProducts } = await supabase.from('products').select('category, features');
+            const { data: allProducts } = await supabase.from('products').select('category, features').eq('is_deleted', false);
             let tripCount = 0;
             let accomCount = 0;
             let transportCount = 0;

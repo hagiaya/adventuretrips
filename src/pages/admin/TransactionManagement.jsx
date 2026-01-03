@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabaseClient';
-import { Search, Filter, MoreHorizontal, CheckCircle, XCircle, Clock, Loader, Eye, Image as ImageIcon, CreditCard, Shield } from 'lucide-react';
+import { Search, Filter, MoreHorizontal, CheckCircle, XCircle, Clock, Loader, Eye, Image as ImageIcon, CreditCard, Shield, Trash2, CheckSquare, Square } from 'lucide-react';
 import { format, parseISO, addDays, subDays, eachDayOfInterval, eachMonthOfInterval, subMonths } from 'date-fns';
 import { id } from 'date-fns/locale';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
@@ -28,6 +28,71 @@ const TransactionManagement = () => {
         total: 0
     });
     const [isRefunding, setIsRefunding] = useState(false);
+    const [selectedIds, setSelectedIds] = useState([]);
+
+    // Selection Handlers
+    const toggleSelectAll = () => {
+        if (selectedIds.length === filteredTransactions.length) {
+            setSelectedIds([]);
+        } else {
+            setSelectedIds(filteredTransactions.map(t => t.id));
+        }
+    };
+
+    const toggleSelectOne = (id) => {
+        if (selectedIds.includes(id)) {
+            setSelectedIds(selectedIds.filter(sid => sid !== id));
+        } else {
+            setSelectedIds([...selectedIds, id]);
+        }
+    };
+
+    // Delete Handlers
+    const handleDelete = async (id) => {
+        if (!window.confirm("Apakah Anda yakin ingin menghapus transaksi ini? Data yang dihapus tidak dapat dikembalikan.")) return;
+
+        try {
+            const { error } = await supabase
+                .from('transactions')
+                .delete()
+                .eq('id', id);
+
+            if (error) throw error;
+
+            // Remove from local state
+            setTransactions(prev => prev.filter(t => t.id !== id));
+            setSelectedIds(prev => prev.filter(sid => sid !== id));
+            alert("Transaksi berhasil dihapus.");
+        } catch (error) {
+            console.error("Error deleting transaction:", error);
+            alert("Gagal menghapus transaksi: " + error.message);
+        }
+    };
+
+    const handleBulkDelete = async () => {
+        if (selectedIds.length === 0) return;
+        if (!window.confirm(`Apakah Anda yakin ingin menghapus ${selectedIds.length} transaksi yang dipilih?`)) return;
+
+        setLoading(true);
+        try {
+            const { error } = await supabase
+                .from('transactions')
+                .delete()
+                .in('id', selectedIds);
+
+            if (error) throw error;
+
+            // Remove from local state
+            setTransactions(prev => prev.filter(t => !selectedIds.includes(t.id)));
+            setSelectedIds([]);
+            alert("Transaksi terpilih berhasil dihapus.");
+        } catch (error) {
+            console.error("Error bulk deleting:", error);
+            alert("Gagal menghapus beberapa transaksi: " + error.message);
+        } finally {
+            setLoading(false);
+        }
+    };
 
     // EMAILJS CONFIGURATION (HARAP DIISI)
     // 1. Login/Daftar di https://www.emailjs.com/ (Gratis)
@@ -641,6 +706,22 @@ const TransactionManagement = () => {
                 </div>
             </div>
 
+            {/* Bulk Actions & Selection Info */}
+            {selectedIds.length > 0 && (
+                <div className="bg-blue-50 border border-blue-200 p-3 rounded-xl flex justify-between items-center animate-fadeIn">
+                    <div className="flex items-center gap-2">
+                        <CheckSquare className="text-blue-600" size={20} />
+                        <span className="text-sm font-bold text-blue-800">{selectedIds.length} Transaksi Dipilih</span>
+                    </div>
+                    <button
+                        onClick={handleBulkDelete}
+                        className="flex items-center gap-2 bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-bold transition-all shadow-md"
+                    >
+                        <Trash2 size={16} /> Hapus Terpilih
+                    </button>
+                </div>
+            )}
+
             {/* Status Filter Tabs */}
             <div className="space-y-2">
                 <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest pl-1">Filter Status</p>
@@ -710,6 +791,17 @@ const TransactionManagement = () => {
                     <table className="w-full text-left">
                         <thead className="bg-gray-50 border-b border-gray-100">
                             <tr>
+                                <th className="px-6 py-4 w-4">
+                                    <div className="flex items-center">
+                                        <button onClick={toggleSelectAll} className="text-gray-400 hover:text-gray-600">
+                                            {selectedIds.length > 0 && selectedIds.length === filteredTransactions.length ? (
+                                                <CheckSquare size={20} className="text-primary" />
+                                            ) : (
+                                                <Square size={20} />
+                                            )}
+                                        </button>
+                                    </div>
+                                </th>
                                 <th className="px-6 py-4 font-semibold text-gray-700 text-xs uppercase tracking-wider">Invoice</th>
                                 <th className="px-6 py-4 font-semibold text-gray-700 text-xs uppercase tracking-wider">Item Info</th>
                                 <th className="px-6 py-4 font-semibold text-gray-700 text-xs uppercase tracking-wider">Kategori</th>
@@ -741,7 +833,16 @@ const TransactionManagement = () => {
                                 </tr>
                             ) : (
                                 filteredTransactions.map((t) => (
-                                    <tr key={t.id} className="hover:bg-gray-50 transition-colors cursor-pointer" onClick={() => setViewTransaction(t)}>
+                                    <tr key={t.id} className={`hover:bg-gray-50 transition-colors cursor-pointer ${selectedIds.includes(t.id) ? 'bg-blue-50/50' : ''}`} onClick={() => setViewTransaction(t)}>
+                                        <td className="px-6 py-4" onClick={(e) => e.stopPropagation()}>
+                                            <button onClick={() => toggleSelectOne(t.id)} className="text-gray-400 hover:text-primary">
+                                                {selectedIds.includes(t.id) ? (
+                                                    <CheckSquare size={20} className="text-primary" />
+                                                ) : (
+                                                    <Square size={20} />
+                                                )}
+                                            </button>
+                                        </td>
                                         <td className="px-6 py-4">
                                             <div className="flex flex-col">
                                                 <span className="font-mono text-xs text-gray-500">#{t.id.slice(0, 8)}</span>
@@ -837,6 +938,13 @@ const TransactionManagement = () => {
                                                         <CheckCircle size={18} />
                                                     </button>
                                                 )}
+                                                <button
+                                                    onClick={(e) => { e.stopPropagation(); handleDelete(t.id); }}
+                                                    className="p-1.5 bg-white border border-gray-200 text-gray-400 rounded hover:bg-red-50 hover:text-red-500 hover:border-red-200 transition-colors"
+                                                    title="Hapus Transaksi"
+                                                >
+                                                    <Trash2 size={18} />
+                                                </button>
                                             </div>
                                         </td>
                                     </tr>

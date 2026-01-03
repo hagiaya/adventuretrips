@@ -13,6 +13,7 @@ export const useTrips = () => {
                 const { data, error } = await supabase
                     .from('products')
                     .select('*')
+                    .eq('is_deleted', false)
                     .order('created_at', { ascending: false });
 
                 if (error) {
@@ -128,6 +129,7 @@ export const useTrip = (id) => {
                 .from('products')
                 .select('*')
                 .eq('id', id)
+                .eq('is_deleted', false)
                 .single();
 
             if (data) {
