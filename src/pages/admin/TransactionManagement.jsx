@@ -8,7 +8,8 @@ import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import emailjs from '@emailjs/browser';
-import { Download, FileText, FileSpreadsheet } from 'lucide-react';
+import { Download, FileText, FileSpreadsheet, MessageSquare } from 'lucide-react';
+import { sendWhatsApp } from '../../utils/whatsapp';
 
 const TransactionManagement = () => {
     const [transactions, setTransactions] = useState([]);
@@ -29,6 +30,7 @@ const TransactionManagement = () => {
     });
     const [isRefunding, setIsRefunding] = useState(false);
     const [selectedIds, setSelectedIds] = useState([]);
+    const [isSendingWA, setIsSendingWA] = useState(false);
 
     // Selection Handlers
     const toggleSelectAll = () => {
@@ -334,6 +336,53 @@ const TransactionManagement = () => {
         }
     };
 
+    const handleSendWANotification = async (transaction, type) => {
+        if (!transaction) return;
+
+        // 1. Get Phone Number
+        // Priority: participants[0].phone -> profile.phone
+        let phone = '';
+        if (Array.isArray(transaction.participants) && transaction.participants.length > 0) {
+            phone = transaction.participants[0].phone || transaction.participants[0].whatsapp;
+        }
+
+        if (!phone) {
+            // Try fetching from profiles
+            const { data: profile } = await supabase.from('profiles').select('phone').eq('id', transaction.user_id).single();
+            phone = profile?.phone;
+        }
+
+        if (!phone) {
+            alert("No. WhatsApp tidak ditemukan. Mohon lengkapi data peserta atau profil user.");
+            return;
+        }
+
+        setIsSendingWA(true);
+        try {
+            const invoiceId = transaction.id.substring(0, 8).toUpperCase();
+            const amountStr = Number(transaction.amount).toLocaleString('id-ID');
+            const items = transaction.items || 'Booking Trip';
+
+            let message = '';
+            if (type === 'pending') {
+                message = `Halo! ✈️\n\nKami mengingatkan pesanan *#${invoiceId}* (${items}) sebesar *Rp ${amountStr}* belum diselesaikan.\n\nMohon segera lakukan pembayaran agar reservasi Anda tidak dibatalkan otomatis. Abaikan pesan ini jika sudah membayar.\n\nTerima kasih! 🙏`;
+            } else if (type === 'success') {
+                message = `Halo! ✅\n\nPembayaran pesanan *#${invoiceId}* (${items}) sebesar *Rp ${amountStr}* telah *BERHASIL* kami terima.\n\nTerima kasih telah mempercayai layanan kami. Sampai jumpa di perjalanan nanti! 👋`;
+            }
+
+            const result = await sendWhatsApp(phone, message);
+            if (result.success) {
+                alert(`Notifikasi WhatsApp (${type}) berhasil dikirim ke ${phone}`);
+            } else {
+                alert(`Gagal mengirim WhatsApp: ${result.error}`);
+            }
+        } catch (err) {
+            alert("Terjadi kesalahan: " + err.message);
+        } finally {
+            setIsSendingWA(false);
+        }
+    };
+
     const handleRefundToBalance = async (transaction) => {
         if (!transaction.user_id) {
             alert("Gagal: User ID tidak ditemukan dalam transaksi ini.");
@@ -624,6 +673,32 @@ const TransactionManagement = () => {
                                         * Harga sudah termasuk Layanan, Asuransi, & Biaya Lainnya.
                                     </div>
                                 </div>
+                            </div>
+
+                            {/* WhatsApp Notification Actions */}
+                            <div className="mt-8 pt-6 border-t border-gray-100">
+                                <label className="text-xs font-bold text-gray-400 uppercase block mb-3">Notifikasi Customer</label>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                    <button
+                                        onClick={() => handleSendWANotification(viewTransaction, 'pending')}
+                                        disabled={isSendingWA}
+                                        className="flex items-center justify-center gap-2 px-4 py-3 bg-yellow-50 text-yellow-700 border border-yellow-100 rounded-xl hover:bg-yellow-100 transition-all font-bold text-sm disabled:opacity-50"
+                                    >
+                                        <MessageSquare size={18} />
+                                        {isSendingWA ? 'Mengirim...' : 'Kirim Pengingat Transfer (Pending)'}
+                                    </button>
+                                    <button
+                                        onClick={() => handleSendWANotification(viewTransaction, 'success')}
+                                        disabled={isSendingWA}
+                                        className="flex items-center justify-center gap-2 px-4 py-3 bg-green-50 text-green-700 border border-green-100 rounded-xl hover:bg-green-100 transition-all font-bold text-sm disabled:opacity-50"
+                                    >
+                                        <CheckCircle size={18} />
+                                        {isSendingWA ? 'Mengirim...' : 'Kirim Notifikasi Sukses'}
+                                    </button>
+                                </div>
+                                <p className="text-[10px] text-gray-400 mt-2 italic text-center">
+                                    * Pesan dikirim melalui API Fonnte ke nomor WhatsApp peserta/akun.
+                                </p>
                             </div>
 
                         </div>
@@ -935,6 +1010,13 @@ const TransactionManagement = () => {
                                                     title="Lihat Detail"
                                                 >
                                                     <Eye size={18} />
+                                                </button>
+                                                <button
+                                                    onClick={(e) => { e.stopPropagation(); handleSendWANotification(t, t.status === 'pending' ? 'pending' : 'success'); }}
+                                                    className="p-1.5 bg-green-50 text-green-600 border border-green-200 rounded hover:bg-green-600 hover:text-white transition-colors"
+                                                    title="Kirim Notifikasi WA"
+                                                >
+                                                    <MessageSquare size={18} />
                                                 </button>
                                                 {t.status === 'verification_pending' ? (
                                                     <>

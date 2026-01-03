@@ -280,7 +280,7 @@ const MobileAppMenu = () => {
             icon: <Headphones className="w-6 h-6 text-white" />,
             label: "CS",
             color: "bg-green-500",
-            action: () => window.open('https://wa.me/6281382471642?text=Halo%20Admin,%20saya%20butuh%20bantuan', '_blank')
+            action: () => window.open('https://wa.me/6281818433490?text=Halo%20Admin,%20saya%20butuh%20bantuan', '_blank')
         },
     ];
 
@@ -502,7 +502,7 @@ const MobileAppMenu = () => {
                                 <ChevronRight size={18} className="text-gray-300" />
                             </button>
 
-                            <button onClick={() => { window.open('https://wa.me/6281382471642', '_blank'); setIsUserMenuOpen(false); }} className="w-full flex items-center justify-between p-4 bg-gray-50 rounded-2xl hover:bg-pink-50 transition-colors group">
+                            <button onClick={() => { window.open('https://wa.me/6281818433490', '_blank'); setIsUserMenuOpen(false); }} className="w-full flex items-center justify-between p-4 bg-gray-50 rounded-2xl hover:bg-pink-50 transition-colors group">
                                 <div className="flex items-center gap-3 font-bold text-sm text-gray-700 group-hover:text-primary">
                                     <Headphones size={20} className="text-gray-400 group-hover:text-primary" />
                                     Pusat Bantuan

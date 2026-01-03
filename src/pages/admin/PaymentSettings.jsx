@@ -14,9 +14,9 @@ const PaymentSettings = () => {
         sandbox_server_key: '',
         prod_merchant_id: '',
         prod_client_key: '',
-        prod_client_key: '',
         prod_server_key: '',
-        tax_percentage: 0
+        tax_percentage: 0,
+        whatsapp_token: ''
     });
 
     const [manualAccounts, setManualAccounts] = useState([]);
@@ -61,7 +61,8 @@ const PaymentSettings = () => {
                     prod_merchant_id: data.prod_merchant_id || '',
                     prod_client_key: data.prod_client_key || '',
                     prod_server_key: data.prod_server_key || '',
-                    tax_percentage: data.tax_percentage || 0
+                    tax_percentage: data.tax_percentage || 0,
+                    whatsapp_token: data.whatsapp_token || ''
                 });
                 if (data.manual_accounts && Array.isArray(data.manual_accounts)) {
                     setManualAccounts(data.manual_accounts);
@@ -161,6 +162,29 @@ const PaymentSettings = () => {
                                 className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 outline-none"
                             />
                             <span className="font-bold text-gray-600">%</span>
+                        </div>
+                    </div>
+                </div>
+
+                {/* WhatsApp Notification Settings */}
+                <div className="pt-6 border-t border-gray-100">
+                    <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+                        <div className="p-1 px-1.5 bg-green-500 text-white rounded">WA</div>
+                        Notifikasi WhatsApp (Fonnte)
+                    </h2>
+                    <div className="bg-green-50/30 border border-green-100 rounded-lg p-4">
+                        <label className="block text-sm font-bold text-gray-700 mb-2">Fonnte API Token</label>
+                        <p className="text-xs text-gray-500 mb-3">Dapatkan token Anda dari dashboard <a href="https://fonnte.com" target="_blank" rel="noreferrer" className="text-green-600 underline">Fonnte</a>.</p>
+                        <div className="relative max-w-lg">
+                            <input
+                                type="password"
+                                name="whatsapp_token"
+                                value={formData.whatsapp_token}
+                                onChange={handleChange}
+                                placeholder="Masukkan token Fonnte Anda"
+                                className="w-full p-2.5 pl-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 outline-none font-mono text-sm"
+                            />
+                            <Lock className="w-4 h-4 text-gray-400 absolute left-3 top-3.5" />
                         </div>
                     </div>
                 </div>

@@ -134,6 +134,7 @@ const AccommodationDetail = ({ mobileMode = false }) => {
                 user_id: userId,
                 amount: finalAmount,
                 status: 'pending',
+                date: checkInDate,
                 items: itemDesc,
                 payment_method: 'Pending Choice',
                 metadata: {

@@ -177,7 +177,7 @@ const TicketsPage = ({ mobileMode = false }) => {
                                             </Link>
                                         ) : ticket.status === 'verification_pending' ? (
                                             <a
-                                                href={`https://wa.me/6281234567890?text=Halo Admin, saya ingin cek status verifikasi pesanan invoice no: ${ticket.id}`}
+                                                href={`https://wa.me/6281818433490?text=Halo Admin, saya ingin cek status verifikasi pesanan invoice no: ${ticket.id}`}
                                                 target="_blank"
                                                 rel="noreferrer"
                                                 className="px-4 py-2 bg-green-500 text-white rounded-lg text-xs font-bold shadow-md shadow-green-500/30 hover:bg-green-600 transition-all flex items-center gap-1"
@@ -190,7 +190,7 @@ const TicketsPage = ({ mobileMode = false }) => {
                                                     Info
                                                 </Link>
                                                 <a
-                                                    href={`https://wa.me/6281234567890?text=Halo Admin, saya ingin konfirmasi pembayaran untuk pesanan invoice no: ${ticket.id}`}
+                                                    href={`https://wa.me/6281818433490?text=Halo Admin, saya ingin konfirmasi pembayaran untuk pesanan invoice no: ${ticket.id}`}
                                                     target="_blank"
                                                     rel="noreferrer"
                                                     className="px-4 py-2 bg-blue-600 text-white rounded-lg text-xs font-bold shadow-md shadow-blue-600/30 hover:bg-blue-700 transition-all flex items-center gap-1"

@@ -92,6 +92,7 @@ const TransportDetail = ({ mobileMode = false }) => {
                 user_id: session.user.id,
                 amount: totalPrice,
                 status: 'pending',
+                date: startDate,
                 items: itemDesc,
                 payment_method: 'Pending Choice',
                 metadata: {

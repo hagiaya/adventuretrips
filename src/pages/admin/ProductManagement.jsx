@@ -1365,8 +1365,8 @@ const ProductManagement = ({ initialProductType = null }) => {
                                                                 alert("Mohon lengkapi rentang tanggal dan harga");
                                                                 return;
                                                             }
-                                                            const start = new Date(bulkStartDate);
-                                                            const end = new Date(bulkEndDate);
+                                                            const start = new Date(bulkStartDate + 'T00:00:00');
+                                                            const end = new Date(bulkEndDate + 'T00:00:00');
 
                                                             if (start > end) {
                                                                 alert("Tanggal akhir harus setelah tanggal awal");
@@ -1374,7 +1374,7 @@ const ProductManagement = ({ initialProductType = null }) => {
                                                             }
 
                                                             const newItems = [];
-                                                            let current = start;
+                                                            let current = new Date(start);
                                                             while (current <= end) {
                                                                 if (selectedDays[current.getDay()]) {
                                                                     const isWeekend = [0, 5, 6].includes(current.getDay()); // Fri, Sat, Sun
@@ -1382,10 +1382,16 @@ const ProductManagement = ({ initialProductType = null }) => {
                                                                         ? newSchedule.weekendPrice
                                                                         : newSchedule.price;
 
+                                                                    // Format as YYYY-MM-DD in local time
+                                                                    const year = current.getFullYear();
+                                                                    const month = String(current.getMonth() + 1).padStart(2, '0');
+                                                                    const dayStr = String(current.getDate()).padStart(2, '0');
+                                                                    const dateStr = `${year}-${month}-${dayStr}`;
+
                                                                     newItems.push({
                                                                         ...newSchedule,
                                                                         price: priceToUse,
-                                                                        date: current.toISOString().split('T')[0]
+                                                                        date: dateStr
                                                                     });
                                                                 }
                                                                 current.setDate(current.getDate() + 1);

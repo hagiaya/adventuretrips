@@ -123,21 +123,21 @@ const TripCalendar = ({ schedules, selectedIndex, onSelect, duration }) => {
                         }
                     }
 
-                    if (schedule) {
-                        if (isSelected || isRangeStart) { // Main selected day (Start)
-                            // Logic for available vs full is same ...
-                            if (isLowQuota && isAvailable) {
-                                containerClass += " !bg-yellow-100 ring-2 ring-yellow-400 z-10 shadow-lg scale-[1.05] border-transparent rounded-l-md rounded-r-none";
-                                dateClass += " bg-yellow-500 text-white font-bold";
-                            } else if (isAvailable) {
-                                containerClass += " !bg-green-100 ring-1 ring-green-500 z-10 shadow-lg scale-[1.05] border-transparent rounded-l-md rounded-r-none";
-                                dateClass += " bg-green-600 text-white font-bold";
-                            } else {
-                                // Full but chosen? Usually shouldn't happen unless admin view
-                                containerClass += " bg-red-100";
-                            }
-                        } else if (isAvailable) {
-                            // Normal available day
+                    if (isSelected || isRangeStart) {
+                        // START OF RANGE
+                        containerClass += " !bg-emerald-600 z-20 shadow-md scale-[1.02] rounded-l-lg rounded-r-none";
+                        dateClass += " bg-white text-emerald-600 font-bold";
+                    } else if (isRangeMiddle) {
+                        // MIDDLE OF RANGE
+                        containerClass += " !bg-emerald-600/90 z-10 rounded-none";
+                        dateClass += " text-white font-bold";
+                    } else if (isRangeEnd) {
+                        // END OF RANGE
+                        containerClass += " !bg-emerald-600/90 z-10 rounded-r-lg";
+                        dateClass += " text-white font-bold";
+                    } else if (schedule) {
+                        // Other available dates that are NOT part of the selected range
+                        if (isAvailable) {
                             if (isLowQuota) {
                                 containerClass += " hover:bg-yellow-50 cursor-pointer";
                                 dateClass += " text-gray-700 bg-yellow-100 group-hover:bg-yellow-200 text-yellow-700";
@@ -146,24 +146,15 @@ const TripCalendar = ({ schedules, selectedIndex, onSelect, duration }) => {
                                 dateClass += " text-gray-700 bg-green-100 group-hover:bg-green-200 text-green-700";
                             }
                         } else {
-                            // Full
-                            containerClass += " bg-red-50/50 cursor-not-allowed";
-                            dateClass += " text-red-500 bg-red-100/50 line-through decoration-red-300";
+                            containerClass += " bg-gray-50/50 cursor-not-allowed";
+                            dateClass += " text-gray-300 bg-gray-100 line-through";
                         }
                     } else {
-                        // No Schedule here, but check if it's in the calculated range of the selected trip
-                        if (isRangeMiddle) {
-                            containerClass += " !bg-green-100 border-y border-green-500/20"; // Consistent green block
-                            dateClass += " bg-green-600 text-white font-bold";
-                        } else if (isRangeEnd) {
-                            containerClass += " !bg-green-100 rounded-r-md border-y border-r border-green-500/20"; // Consistent green block
-                            dateClass += " bg-green-600 text-white font-bold";
-                        } else {
-                            dateClass += " text-gray-300";
-                        }
+                        // Empty days
+                        dateClass += " text-gray-300";
                     }
 
-                    if (isToday && !isSelected && !isRangeStart) {
+                    if (isToday && !isSelected && !isRangeStart && !isRangeMiddle && !isRangeEnd) {
                         dateClass += " border border-primary text-primary";
                     }
 

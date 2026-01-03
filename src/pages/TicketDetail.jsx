@@ -14,7 +14,7 @@ const TicketDetail = () => {
             try {
                 const { data, error } = await supabase
                     .from('transactions')
-                    .select('*, product:products(*)')
+                    .select('*, product:products(*), products:product_id(*)') // Try both aliases to be safe
                     .eq('id', id)
                     .single();
 
@@ -97,9 +97,11 @@ const TicketDetail = () => {
                     <div className="absolute top-0 right-0 transform translate-x-1/2 -translate-y-1/2 w-6 h-6 bg-gray-100 rounded-full"></div>
 
                     <div className="text-center mb-6">
-                        <h2 className="text-2xl font-bold text-gray-900 leading-tight mb-1">{transaction.product?.title}</h2>
+                        <h2 className="text-2xl font-bold text-gray-900 leading-tight mb-1">
+                            {transaction.product?.title || transaction.products?.title || transaction.items || 'Trip Booking'}
+                        </h2>
                         <span className="inline-block px-3 py-1 bg-blue-50 text-blue-600 text-xs font-bold rounded-full uppercase tracking-wide">
-                            {transaction.product?.category || 'Open Trip'}
+                            {transaction.product?.category || transaction.products?.category || 'Open Trip'}
                         </span>
                     </div>
 
@@ -120,7 +122,7 @@ const TicketDetail = () => {
                                     <Users size={12} /> Pax
                                 </span>
                                 <p className="font-bold text-gray-900 text-sm">
-                                    {transaction.items && transaction.items.includes('Pax') ?
+                                    {transaction.items && typeof transaction.items === 'string' && transaction.items.includes('Pax') ?
                                         transaction.items.match(/(\d+)\s*Pax/)?.[1] || '1' : '1'} Orang
                                 </p>
                             </div>
@@ -131,7 +133,7 @@ const TicketDetail = () => {
                                 <MapPin size={12} /> Meeting Point
                             </span>
                             <p className="font-bold text-gray-900 text-sm">
-                                {transaction.meeting_point || transaction.product?.location || 'Akan diinfokan Admin'}
+                                {transaction.meeting_point || transaction.product?.location || transaction.products?.location || 'Akan diinfokan Admin'}
                             </p>
                         </div>
 
@@ -142,12 +144,15 @@ const TicketDetail = () => {
                                     <Users size={12} /> Participants
                                 </span>
                                 <ul className="text-sm font-medium text-gray-800 space-y-1">
-                                    {transaction.participants.map((name, idx) => (
-                                        <li key={idx} className="flex gap-2">
-                                            <span className="text-gray-400 w-4">{idx + 1}.</span>
-                                            <span>{name}</span>
-                                        </li>
-                                    ))}
+                                    {transaction.participants.map((p, idx) => {
+                                        const participantName = typeof p === 'string' ? p : (p.name || p.full_name || 'Peserta');
+                                        return (
+                                            <li key={idx} className="flex gap-2">
+                                                <span className="text-gray-400 w-4">{idx + 1}.</span>
+                                                <span>{participantName}</span>
+                                            </li>
+                                        );
+                                    })}
                                 </ul>
                             </div>
                         )}
