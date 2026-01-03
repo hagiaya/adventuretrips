@@ -2,7 +2,7 @@ import React from 'react';
 import { MapPin, Star, Eye, Clock } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useTrips } from '../hooks/useTrips';
-import { formatNumber } from '../utils/formatters';
+import { formatNumber, formatCurrency } from '../utils/formatters';
 import { getRecentlyViewedIds } from '../utils/recentlyViewed';
 
 const SmallTripCard = ({ id, image, title, location, price, rating, category, views, duration, original_price, discount_percentage, type }) => {
@@ -46,7 +46,7 @@ const SmallTripCard = ({ id, image, title, location, price, rating, category, vi
                                 </p>
                             )}
                             <p className="text-sm font-bold text-primary">
-                                {typeof price === 'number' ? `Rp ${price.toLocaleString('id-ID')}` : price}
+                                {formatCurrency(price)}
                             </p>
                         </div>
                         <div className="flex items-center gap-1 bg-gray-50 px-1.5 py-0.5 rounded text-[10px] text-gray-500">

@@ -13,6 +13,7 @@ const PrivateTripPage = ({ isMobile }) => {
         phone: '',
         email: '',
         destination: '',
+        pickup_point: '',
         start_date: '',
         duration: '',
         pax: '',
@@ -82,6 +83,7 @@ const PrivateTripPage = ({ isMobile }) => {
                                     phone: '',
                                     email: '',
                                     destination: '',
+                                    pickup_point: '',
                                     start_date: '',
                                     duration: '',
                                     pax: '',
@@ -192,6 +194,19 @@ const PrivateTripPage = ({ isMobile }) => {
                         <h3 className="font-bold text-gray-900 border-b pb-2 flex items-center gap-2">
                             <MapPin size={18} className="text-primary" /> Rencana Perjalanan
                         </h3>
+
+                        <div>
+                            <label className="block text-xs font-bold text-gray-500 mb-1">Penjemputan & Pengantaran</label>
+                            <input
+                                type="text"
+                                name="pickup_point"
+                                required
+                                value={formData.pickup_point}
+                                onChange={handleChange}
+                                className="w-full p-3 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all text-sm font-medium"
+                                placeholder="Contoh: Cilegon - Serang"
+                            />
+                        </div>
 
                         <div>
                             <label className="block text-xs font-bold text-gray-500 mb-1">Destinasi Tujuan</label>

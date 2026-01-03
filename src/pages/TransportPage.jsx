@@ -3,6 +3,7 @@ import { useTrips } from '../hooks/useTrips';
 import { MapPin, Star, ArrowLeft, Filter, Users, Fuel, Briefcase, Car, Eye } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import TripsFilterSidebar from '../components/TripsFilterSidebar';
+import { formatCurrency } from '../utils/formatters';
 
 const CarCard = ({ id, image, title, location, price, rating, features, mobileMode, views, original_price }) => {
     const specs = features?.specs || [];
@@ -61,7 +62,7 @@ const CarCard = ({ id, image, title, location, price, rating, features, mobileMo
                             )}
                             <p className="text-[10px] text-gray-400">Harga Sewa</p>
                             <div className="flex items-baseline gap-1">
-                                <p className="text-sm md:text-lg font-bold text-blue-600">{price}</p>
+                                <p className="text-sm md:text-lg font-bold text-blue-600">{formatCurrency(price)}</p>
                                 <p className="text-[10px] text-gray-400">/ hari</p>
                             </div>
                         </div>

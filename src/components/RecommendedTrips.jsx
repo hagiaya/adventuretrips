@@ -2,7 +2,7 @@ import React from 'react';
 import { MapPin, Star, Eye } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useTrips } from '../hooks/useTrips';
-import { formatNumber } from '../utils/formatters';
+import { formatNumber, formatCurrency } from '../utils/formatters';
 
 const TripCard = ({ id, image, title, location, price, rating, views, duration, original_price, discount_percentage, organizer }) => (
     <Link to={`/trip/${id}`} className="block h-full">
@@ -57,7 +57,7 @@ const TripCard = ({ id, image, title, location, price, rating, views, duration, 
                                 {original_price}
                             </p>
                         )}
-                        <p className="text-lg font-bold text-primary">{price}</p>
+                        <p className="text-lg font-bold text-primary">{formatCurrency(price)}</p>
                     </div>
                     <button className="bg-pink-50 text-pink-600 px-4 py-2 rounded-lg text-sm font-bold group-hover:bg-primary group-hover:text-white transition-all transform group-hover:translate-x-1">
                         Lihat

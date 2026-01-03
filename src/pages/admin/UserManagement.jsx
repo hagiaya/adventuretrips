@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabaseClient';
-import { Search, User, Mail, Phone, Calendar, MoreHorizontal, Shield, Edit2, Trash2, CheckCircle, X } from 'lucide-react';
+import { Search, User, Mail, Phone, Calendar, MoreHorizontal, Shield, Edit2, Trash2, CheckCircle, X, Clock } from 'lucide-react';
 
 const UserManagement = () => {
     const [users, setUsers] = useState([]);
@@ -227,11 +227,15 @@ const UserManagement = () => {
                                         </td>
                                         <td className="px-6 py-4">
                                             {user.is_verified ? (
-                                                <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-green-50 text-green-700 border border-green-100">
-                                                    Verified
+                                                <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-green-50 text-green-700 border border-green-100 flex items-center gap-1">
+                                                    <CheckCircle size={12} /> Verified
+                                                </span>
+                                            ) : user.kyc_status === 'pending' ? (
+                                                <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-yellow-50 text-yellow-700 border border-yellow-100 flex items-center gap-1">
+                                                    <Clock size={12} /> KYC Pending
                                                 </span>
                                             ) : (
-                                                <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-gray-50 text-gray-500 border border-gray-100">
+                                                <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-gray-50 text-gray-500 border border-gray-100 italic">
                                                     Unverified
                                                 </span>
                                             )}

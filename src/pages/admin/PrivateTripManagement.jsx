@@ -84,6 +84,11 @@ const PrivateTripManagement = () => {
                                     <div className="flex items-start justify-between">
                                         <div>
                                             <h3 className="text-lg font-bold text-gray-900">{req.destination}</h3>
+                                            {req.pickup_point && (
+                                                <p className="text-xs font-bold text-primary flex items-center gap-1 mt-0.5">
+                                                    <MapPin size={12} /> Point: {req.pickup_point}
+                                                </p>
+                                            )}
                                             <div className="flex items-center gap-2 text-sm text-gray-500 mt-1">
                                                 <Calendar size={14} />
                                                 <span>{new Date(req.start_date).toLocaleDateString()} ({req.duration} Hari)</span>
@@ -125,7 +130,7 @@ const PrivateTripManagement = () => {
                                         <div className="flex items-center gap-1 font-mono font-bold text-gray-800">
                                             <DollarSign size={16} className="text-green-600" />
                                             <span>
-                                                Rp {req.budget_min?.toLocaleString()} - {req.budget_max?.toLocaleString()}
+                                                Rp {req.budget_min?.toLocaleString()} - Rp {req.budget_max?.toLocaleString()}
                                             </span>
                                         </div>
                                     </div>
@@ -141,7 +146,7 @@ const PrivateTripManagement = () => {
 
                                     <div className="pt-2 flex gap-2">
                                         <a
-                                            href={`https://wa.me/${req.phone}?text=Halo ${req.full_name}, kami dari Adventure Trip merespon request Private Trip Anda ke ${req.destination}.`}
+                                            href={`https://wa.me/${req.phone}?text=Halo ${req.full_name}, kami dari Adventure Trip merespon request Private Trip Anda ${req.pickup_point ? `dari ${req.pickup_point} ` : ''}ke ${req.destination}.`}
                                             target="_blank"
                                             rel="noreferrer"
                                             className="flex-1 bg-green-500 text-white text-center py-2 rounded-lg font-bold hover:bg-green-600 transition-colors text-sm flex items-center justify-center gap-2"

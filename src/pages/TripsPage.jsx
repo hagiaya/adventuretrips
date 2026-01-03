@@ -3,6 +3,7 @@ import { useTrips } from '../hooks/useTrips';
 import { MapPin, Star, ArrowLeft, Filter, Eye } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import TripsFilterSidebar from '../components/TripsFilterSidebar';
+import { formatCurrency } from '../utils/formatters';
 
 const TripCard = ({ id, image, title, location, price, rating, category, mobileMode, duration, views, original_price, discount_percentage, organizer }) => (
     <Link to={mobileMode ? `/mobile-trip/${id}` : `/trip/${id}`} className="block h-full animate-fadeIn">
@@ -74,7 +75,7 @@ const TripCard = ({ id, image, title, location, price, rating, category, mobileM
                             </div>
                         )}
                         <p className="text-sm md:text-lg font-bold text-primary">
-                            {typeof price === 'number' ? `Rp ${price.toLocaleString('id-ID')}` : price}
+                            {formatCurrency(price)}
                         </p>
                     </div>
                     <button className="w-full bg-pink-50 text-pink-600 px-3 py-1.5 rounded-lg text-xs md:text-sm font-bold group-hover:bg-primary group-hover:text-white transition-all">

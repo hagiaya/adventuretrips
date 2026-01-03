@@ -15,3 +15,13 @@ export const formatNumber = (num) => {
 
     return n.toString();
 };
+export const formatCurrency = (val) => {
+    if (val === undefined || val === null) return 'Rp 0';
+    const n = typeof val === 'string' ? parseFloat(val.replace(/[^0-9.]/g, '')) : val;
+    if (isNaN(n)) return 'Rp 0';
+    return new Intl.NumberFormat('id-ID', {
+        style: 'currency',
+        currency: 'IDR',
+        maximumFractionDigits: 0
+    }).format(n);
+};

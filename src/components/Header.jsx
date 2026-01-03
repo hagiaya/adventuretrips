@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Search, Menu, User, LogOut, CheckCircle, X } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
+import WalletModal from './WalletModal';
+import { Wallet } from 'lucide-react';
 
 const Header = () => {
     const navigate = useNavigate();
@@ -12,6 +14,7 @@ const Header = () => {
     const [balance, setBalance] = useState(0);
     const [searchQuery, setSearchQuery] = useState('');
     const [logoUrl, setLogoUrl] = useState('/logo.png');
+    const [isWalletModalOpen, setIsWalletModalOpen] = useState(false);
 
     useEffect(() => {
         // Fetch Logo
@@ -175,10 +178,17 @@ const Header = () => {
                                             {user.user_metadata?.full_name?.split(' ')[0] || 'User'}
                                         </span>
                                         <span className="text-[10px] font-bold text-primary mt-1 px-1.5 py-0.5 bg-pink-50 rounded">
-                                            Saldo: Rp {new Intl.NumberFormat('id-ID').format(balance)}
+                                            Rp {new Intl.NumberFormat('id-ID').format(balance)}
                                         </span>
                                     </div>
                                 </div>
+                                <button
+                                    onClick={() => setIsWalletModalOpen(true)}
+                                    className="flex items-center gap-2 px-3 py-2 bg-primary text-white text-[11px] font-bold rounded-xl hover:bg-pink-600 transition-all shadow-md shadow-primary/20 hover:scale-105 active:scale-95 whitespace-nowrap"
+                                >
+                                    <Wallet size={14} />
+                                    <span>Dompet</span>
+                                </button>
                                 <button
                                     onClick={handleLogout}
                                     title="Keluar"
@@ -350,6 +360,17 @@ const Header = () => {
                         <p className="text-sm text-gray-500">{toast.message}</p>
                     </div>
                 </div>
+            )}
+            {user && (
+                <WalletModal
+                    isOpen={isWalletModalOpen}
+                    onClose={() => setIsWalletModalOpen(false)}
+                    userId={user.id}
+                    currentBalance={balance}
+                    onSuccess={() => {
+                        window.location.reload();
+                    }}
+                />
             )}
         </>
     );

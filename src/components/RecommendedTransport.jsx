@@ -2,6 +2,7 @@ import React from 'react';
 import { MapPin, Star, Eye } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useTrips } from '../hooks/useTrips';
+import { formatCurrency } from '../utils/formatters';
 
 const TransportCard = ({ id, image, title, location, price, rating, features }) => {
     const vehicleType = features?.vehicle_type || 'Car';
@@ -39,7 +40,7 @@ const TransportCard = ({ id, image, title, location, price, rating, features }) 
                         <div>
                             <p className="text-[10px] text-gray-400 mb-0.5">Harga Sewa</p>
                             <div className="flex items-baseline gap-1">
-                                <p className="text-sm md:text-lg font-bold text-primary">{price}</p>
+                                <p className="text-sm md:text-lg font-bold text-primary">{formatCurrency(price)}</p>
                                 <span className="text-[10px] md:text-xs text-gray-400">/ hari</span>
                             </div>
                         </div>

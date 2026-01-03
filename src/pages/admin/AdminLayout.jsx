@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabaseClient';
 import { useNavigate, Outlet, Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, ShoppingBag, Radio, Receipt, LogOut, Menu, X, User, Image, Settings, Crown, ChevronDown, ChevronUp, Map, Home, Truck, Plus, MessageCircle, FileText } from 'lucide-react';
+import { LayoutDashboard, ShoppingBag, Radio, Receipt, LogOut, Menu, X, User, Image, Settings, Crown, ChevronDown, ChevronUp, Map, Home, Truck, Plus, MessageCircle, FileText, Library, ShieldCheck } from 'lucide-react';
 
 const AdminLayout = () => {
     const navigate = useNavigate();
@@ -40,7 +40,9 @@ const AdminLayout = () => {
         { path: '/admin/transactions', icon: <Receipt size={20} />, label: 'Manajemen Transaksi' },
         { path: '/admin/private-trips', icon: <Crown size={20} />, label: 'Private Trips' },
         { path: '/admin/users', icon: <User size={20} />, label: 'Manajemen Pengguna' },
+        { path: '/admin/kyc', icon: <ShieldCheck size={20} />, label: 'Verifikasi KYC' },
         { path: '/admin/partners', icon: <Image size={20} />, label: 'Manajemen Partner' },
+        { path: '/admin/withdrawals', icon: <Library size={20} />, label: 'Manajemen Penarikan' },
         { path: '/admin/payment-settings', icon: <Receipt size={20} />, label: 'Pengaturan Pembayaran' },
         { path: '/admin/settings', icon: <Settings size={20} />, label: 'Pengaturan Sistem' },
     ];

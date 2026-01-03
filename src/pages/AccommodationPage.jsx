@@ -3,6 +3,7 @@ import { useTrips } from '../hooks/useTrips';
 import { MapPin, Star, ArrowLeft, Filter, Wifi, Coffee, Car, Tv, Wind, Eye } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import TripsFilterSidebar from '../components/TripsFilterSidebar';
+import { formatCurrency } from '../utils/formatters';
 
 const HotelCard = ({ id, image, title, location, price, rating, features, mobileMode, views, original_price }) => {
     // Parse facilities if string or array
@@ -65,7 +66,7 @@ const HotelCard = ({ id, image, title, location, price, rating, features, mobile
                                 <p className="text-[10px] text-gray-400 line-through decoration-red-500/50">{original_price}</p>
                             )}
                             <div className="flex items-baseline gap-1">
-                                <p className="text-sm md:text-lg font-bold text-orange-500">{price}</p>
+                                <p className="text-sm md:text-lg font-bold text-orange-500">{formatCurrency(price)}</p>
                                 <p className="text-[10px] text-gray-400">/ malam</p>
                             </div>
                         </div>

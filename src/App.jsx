@@ -51,6 +51,8 @@ import SystemSettings from './pages/admin/SystemSettings';
 import AccommodationCategoryManagement from './pages/admin/AccommodationCategoryManagement';
 import PopupManagement from './pages/admin/PopupManagement';
 import ContentManagement from './pages/admin/ContentManagement';
+import WithdrawalManagement from './pages/admin/WithdrawalManagement';
+import KYCManagement from './pages/admin/KYCManagement';
 
 import LoginModal from './components/LoginModal'; // Moved to top
 import PaymentSuccess from './pages/PaymentSuccess'; // Moved to top
@@ -208,6 +210,8 @@ const App = () => {
             <Route path="/admin/private-trips" element={<PrivateTripManagement />} />
             <Route path="/admin/users" element={<UserManagement />} />
             <Route path="/admin/partners" element={<PartnerManagement />} />
+            <Route path="/admin/withdrawals" element={<WithdrawalManagement />} />
+            <Route path="/admin/kyc" element={<KYCManagement />} />
             <Route path="/admin/payment-settings" element={<PaymentSettings />} />
             <Route path="/admin/settings" element={<SystemSettings />} />
             <Route path="/admin/stays/categories" element={<AccommodationCategoryManagement />} />

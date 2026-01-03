@@ -4,7 +4,9 @@ import { Link, useNavigate } from 'react-router-dom';
 import BlogSection from './BlogSection';
 import { useTrips } from '../hooks/useTrips';
 import { supabase } from '../lib/supabaseClient';
-import { formatNumber } from '../utils/formatters';
+import { formatNumber, formatCurrency } from '../utils/formatters';
+import WalletModal from './WalletModal';
+import { Wallet } from 'lucide-react';
 
 // MobileTripCard Component
 // MobileTripCard Component with View Count
@@ -74,7 +76,7 @@ const MobileTripCard = ({ id, image, title, location, price, rating, category, v
                             {original_price}
                         </p>
                     )}
-                    <p className="text-sm font-bold text-primary leading-none">{price}</p>
+                    <p className="text-sm font-bold text-primary leading-none">{formatCurrency(price)}</p>
                 </div>
             </div>
         </div>
@@ -128,6 +130,7 @@ const MobileAppMenu = () => {
     const [profile, setProfile] = useState(null); // Store public.profiles data
     const [locationName, setLocationName] = useState("Jakarta, Indonesia"); // Default placeholder
     const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+    const [isWalletModalOpen, setIsWalletModalOpen] = useState(false);
 
     useEffect(() => {
         const fetchUserData = async () => {
@@ -326,18 +329,22 @@ const MobileAppMenu = () => {
                         <p className="text-pink-100 text-[10px] mb-0.5 uppercase tracking-wider font-bold">
                             {user ? 'Saldo Kamu' : 'Lokasi Kamu'}
                         </p>
-                        <h1 className="text-lg font-black text-white flex items-center gap-1.5">
+                        <button
+                            onClick={() => user && setIsWalletModalOpen(true)}
+                            className="text-lg font-black text-white flex items-center gap-1.5 active:scale-95 transition-transform"
+                        >
                             {user ? (
                                 <>
-                                    <CreditCard className="w-4 h-4" />
+                                    <Wallet className="w-4 h-4" />
                                     Rp {new Intl.NumberFormat('id-ID').format(profile?.balance || 0)}
+                                    <ChevronRight className="w-4 h-4 opacity-50" />
                                 </>
                             ) : (
                                 <>
                                     {locationName} <ChevronRight className="w-4 h-4" />
                                 </>
                             )}
-                        </h1>
+                        </button>
                     </div>
                     <button
                         onClick={toggleUserMenu}
@@ -483,6 +490,16 @@ const MobileAppMenu = () => {
                                     <Sparkles size={10} /> Akun Terverifikasi
                                 </div>
                             </div>
+                            <button
+                                onClick={() => {
+                                    setIsUserMenuOpen(false);
+                                    setIsWalletModalOpen(true);
+                                }}
+                                className="ml-auto bg-primary text-white text-[10px] font-black px-3 py-2 rounded-xl shadow-lg shadow-primary/20 hover:bg-pink-600 transition-colors flex items-center gap-1"
+                            >
+                                <Wallet size={12} />
+                                Dompet
+                            </button>
                         </div>
 
                         <div className="space-y-2">
@@ -519,6 +536,16 @@ const MobileAppMenu = () => {
                         </button>
                     </div>
                 </div>
+            )}
+
+            {user && (
+                <WalletModal
+                    isOpen={isWalletModalOpen}
+                    onClose={() => setIsWalletModalOpen(false)}
+                    userId={user.id}
+                    currentBalance={profile?.balance || 0}
+                    onSuccess={() => window.location.reload()}
+                />
             )}
         </div>
     );

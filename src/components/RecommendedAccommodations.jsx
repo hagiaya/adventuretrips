@@ -2,6 +2,7 @@ import React from 'react';
 import { MapPin, Star, Eye } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useTrips } from '../hooks/useTrips';
+import { formatCurrency } from '../utils/formatters';
 
 const HotelCard = ({ id, image, title, location, price, rating, views }) => (
     <Link to={`/stay/${id}`} className="block h-full">
@@ -34,7 +35,7 @@ const HotelCard = ({ id, image, title, location, price, rating, views }) => (
                     <div>
                         <p className="text-[10px] text-gray-400 mb-0.5">Mulai dari</p>
                         <div className="flex items-baseline gap-1">
-                            <p className="text-sm md:text-lg font-bold text-primary">{price}</p>
+                            <p className="text-sm md:text-lg font-bold text-primary">{formatCurrency(price)}</p>
                             <span className="text-[10px] md:text-xs text-gray-400">/ malam</span>
                         </div>
                     </div>
