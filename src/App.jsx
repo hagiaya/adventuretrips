@@ -22,6 +22,7 @@ import MobileAppMenu from './components/MobileAppMenu';
 import PromoPopup from './components/PromoPopup';
 import MobileAppPromo from './components/MobileAppPromo';
 import PartnersSection from './components/PartnersSection';
+import RecentlyViewed from './components/RecentlyViewed';
 import TripsPage from './pages/TripsPage';
 import TicketsPage from './pages/TicketsPage';
 import TermsConditionsPage from './pages/TermsConditionsPage';
@@ -153,6 +154,7 @@ const Home = () => (
     <RecommendedTrips />
     <RecommendedAccommodations />
     <RecommendedTransport />
+    <RecentlyViewed />
     <Testimonials />
     <BlogSection />
     <MobileAppPromo />

@@ -181,8 +181,8 @@ const TripsPage = ({ mobileMode = false, category: propCategory }) => {
             const hasMatch = filters.categories.some(cat => {
                 // Special handling for compound categories
                 if (cat === 'Beach/Island') return tripCat.includes('beach') || tripCat.includes('island') || tripCat.includes('pantai') || tripCat.includes('laut');
-                if (cat === 'Trekking/Camping') return tripCat.includes('trekking') || tripCat.includes('camping') || tripCat.includes('hiking') || tripCat.includes('gunung');
-                if (cat === 'Nature') return tripCat.includes('nature') || tripCat.includes('alam');
+                if (cat === 'Trekking/Camping') return tripCat.includes('trekking') || tripCat.includes('camping') || tripCat.includes('hiking') || tripCat.includes('gunung') || tripCat.includes('adventure'); // Included Adventure
+                if (cat === 'Nature') return tripCat.includes('nature') || tripCat.includes('alam') || tripCat.includes('adventure'); // Included Adventure
                 if (cat === 'Culture/Culinary') return tripCat.includes('culture') || tripCat.includes('culinary') || tripCat.includes('budaya') || tripCat.includes('kuliner');
                 if (cat === 'Adventure') return tripCat.includes('adventure') || tripCat.includes('petualangan');
                 if (cat === 'Umum') return tripCat.includes('umum') || tripCat.includes('open') || tripCat.includes('general');
@@ -202,20 +202,25 @@ const TripsPage = ({ mobileMode = false, category: propCategory }) => {
 
         // 5. Interests
         if (filters.interests.length > 0) {
-            const isPopular = (trip.rating && parseFloat(trip.rating) >= 4.5) || (trip.views_count && parseInt(trip.views_count) > 50);
-
-            // Check if new (last 60 days to be generous for demo)
-            const createdDate = new Date(trip.created_at || Date.now());
-            const daysAgo = new Date();
-            daysAgo.setDate(daysAgo.getDate() - 60);
-            const isNew = createdDate >= daysAgo;
+            // Check explicit flags from database
+            const explicitPopular = trip.is_popular === true;
+            const explicitRecommended = trip.is_recommended === true;
 
             let matchesInterest = false;
-            if (filters.interests.includes('Perjalanan Popular') && isPopular) matchesInterest = true;
-            if (filters.interests.includes('Rekomendasi Terbaru') && isNew) matchesInterest = true; // "Rekomendasi Terbaru" matches the label in sidebar
+
+            // Logic: Match ONLY if explicit flag is true
+            if (filters.interests.includes('Perjalanan Popular') && explicitPopular) {
+                matchesInterest = true;
+            }
+
+            if (filters.interests.includes('Rekomendasi Terbaru') && explicitRecommended) {
+                matchesInterest = true;
+            }
 
             if (!matchesInterest) return false;
         }
+
+
 
         // 6. Duration
         if (filters.duration.length > 0) {

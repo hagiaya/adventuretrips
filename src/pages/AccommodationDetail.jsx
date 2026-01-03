@@ -5,6 +5,7 @@ import { useTrip } from '../hooks/useTrips';
 import { supabase } from '../lib/supabaseClient';
 import { format, addDays, isSameDay, parseISO } from 'date-fns';
 import StayCalendar from '../components/StayCalendar';
+import { addToRecentlyViewed } from '../utils/recentlyViewed';
 
 const AccommodationDetail = ({ mobileMode = false }) => {
     const { id } = useParams();
@@ -64,6 +65,7 @@ const AccommodationDetail = ({ mobileMode = false }) => {
             if (hotel?.id) {
                 await supabase.rpc('increment_product_view', { p_id: hotel.id });
                 setViewCount(prev => prev + 1);
+                addToRecentlyViewed(hotel.id);
             }
         };
         if (hotel?.id) incrementView();

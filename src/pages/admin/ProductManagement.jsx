@@ -40,7 +40,6 @@ const ProductManagement = ({ initialProductType = null }) => {
         facilitiesText: '', // for Accommodation
         specsText: '', // for Transport
         vehicleType: 'Car', // for Transport
-        vehicleType: 'Car', // for Transport
         organizer: 'Adventure Trip',
         is_popular: false,
         is_recommended: false
@@ -814,6 +813,7 @@ const ProductManagement = ({ initialProductType = null }) => {
                                                         <option>Nature</option>
                                                         <option>Culture/Culinary</option>
                                                         <option>Adventure</option>
+                                                        <option>Adrenaline</option>
                                                         <option>Umum</option>
                                                     </>
                                                 )}

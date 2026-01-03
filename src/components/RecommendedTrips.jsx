@@ -69,15 +69,13 @@ const TripCard = ({ id, image, title, location, price, rating, views, duration, 
 );
 
 const RecommendedTrips = () => {
-    const { trips } = useTrips();
+    const { trips, loading } = useTrips();
 
     // Select specific trips for recommendation: 
-    // 1. Manually set 'is_recommended'
-    // 2. Fallback to newest (since useTrips orders by created_at desc)
-    const recommendedTrips = trips
-        .filter(t => t.is_recommended)
-        .concat(trips.filter(t => !t.is_recommended))
-        .slice(0, 4);
+    // Only manually set 'is_recommended'
+    const recommendedTrips = trips.filter(t => t.is_recommended).slice(0, 4);
+
+    if (!loading && recommendedTrips.length === 0) return null;
 
     return (
         <section className="py-16 bg-white">

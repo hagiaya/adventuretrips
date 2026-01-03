@@ -5,6 +5,7 @@ import { useTrip } from '../hooks/useTrips';
 import { supabase } from '../lib/supabaseClient';
 import { format, addDays } from 'date-fns';
 import StayCalendar from '../components/StayCalendar';
+import { addToRecentlyViewed } from '../utils/recentlyViewed';
 
 const TransportDetail = ({ mobileMode = false }) => {
     const { id } = useParams();
@@ -47,7 +48,10 @@ const TransportDetail = ({ mobileMode = false }) => {
 
     // View Count Logic
     useEffect(() => {
-        if (vehicle?.id) supabase.rpc('increment_product_view', { p_id: vehicle.id });
+        if (vehicle?.id) {
+            supabase.rpc('increment_product_view', { p_id: vehicle.id });
+            addToRecentlyViewed(vehicle.id);
+        }
     }, [vehicle]);
 
     // Manual Payment Only

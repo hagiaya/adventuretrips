@@ -73,7 +73,7 @@ const TripsFilterSidebar = ({ filters, onFilterChange, onReset, categoryOptions,
             <div>
                 <h3 className="font-bold text-gray-900 mb-3 text-sm">Berdasarkan Kategori</h3>
                 <div className="space-y-2">
-                    {(categoryOptions || ['Beach/Island', 'Trekking/Camping', 'Nature', 'Culture/Culinary', 'Adventure', 'Umum']).map((label) => (
+                    {(categoryOptions || ['Beach/Island', 'Trekking/Camping', 'Nature', 'Culture/Culinary', 'Adventure', 'Adrenaline', 'Umum']).map((label) => (
                         <label key={label} className="flex items-center gap-2 cursor-pointer group">
                             <input
                                 type="checkbox"

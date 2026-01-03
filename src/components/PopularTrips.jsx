@@ -88,6 +88,9 @@ const TripCard = ({ id, image, title, location, price, rating, category, views, 
 
 const PopularTrips = () => {
     const { trips, loading } = useTrips();
+    const popularTrips = trips.filter(t => t.is_popular).slice(0, 4);
+
+    if (!loading && popularTrips.length === 0) return null;
 
     return (
         <section className="py-16 bg-gray-50/50">
@@ -109,12 +112,7 @@ const PopularTrips = () => {
                     <div className="text-center py-12 text-gray-400">Memuat data...</div>
                 ) : (
                     <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-8">
-                        {trips
-                            .filter(t => t.is_popular) // 1. Filter manually set popular items
-                            .concat(trips.filter(t => !t.is_popular).sort((a, b) => b.views - a.views)) // 2. Concat with others sorted by views
-                            .slice(0, 4) // 3. Take top 4
-                            .map((trip) => <TripCard key={trip.id} {...trip} />)
-                        }
+                        {popularTrips.map((trip) => <TripCard key={trip.id} {...trip} />)}
                     </div>
                 )}
 

@@ -251,20 +251,66 @@ const PartnerManagement = () => {
                                 />
                             </div>
                             <div>
-                                <label className="block text-xs font-bold text-gray-500 mb-1">URL Logo (Image URL)</label>
+                                <label className="block text-xs font-bold text-gray-500 mb-1">Logo Partner</label>
+
+                                {/* Image Preview & Upload */}
+                                <div className="border border-gray-200 rounded-lg p-4 bg-gray-50 mb-3">
+                                    <div className="flex items-center gap-4">
+                                        <div className="w-20 h-20 bg-white border border-gray-200 rounded-lg flex items-center justify-center p-2 overflow-hidden shrink-0">
+                                            {formData.logo_url ? (
+                                                <img src={formData.logo_url} alt="Logo" className="max-w-full max-h-full object-contain" />
+                                            ) : (
+                                                <ImageIcon className="text-gray-300" size={24} />
+                                            )}
+                                        </div>
+                                        <div className="flex-1">
+                                            <input
+                                                type="file"
+                                                id="file-upload"
+                                                className="hidden"
+                                                accept="image/*"
+                                                onChange={async (e) => {
+                                                    const file = e.target.files[0];
+                                                    if (!file) return;
+
+                                                    // Simple upload logic inline or separate function
+                                                    try {
+                                                        const fileName = `partners/${Date.now()}_${file.name.replace(/\s+/g, '-')}`;
+                                                        const { data, error } = await supabase.storage
+                                                            .from('site-assets')
+                                                            .upload(fileName, file);
+
+                                                        if (error) throw error;
+
+                                                        const { data: publicData } = supabase.storage
+                                                            .from('site-assets')
+                                                            .getPublicUrl(fileName);
+
+                                                        setFormData({ ...formData, logo_url: publicData.publicUrl });
+                                                    } catch (err) {
+                                                        alert('Gagal upload gambar: ' + err.message);
+                                                    }
+                                                }}
+                                            />
+                                            <label
+                                                htmlFor="file-upload"
+                                                className="cursor-pointer bg-white border border-gray-300 text-gray-700 px-3 py-1.5 rounded-md text-xs font-bold hover:bg-gray-50 inline-flex items-center gap-2 mb-2"
+                                            >
+                                                <ImageIcon size={14} /> Upload Gambar
+                                            </label>
+                                            <p className="text-[10px] text-gray-500">Mendukung JPG, PNG, SVG. Maks 2MB.</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <label className="block text-[10px] font-bold text-gray-400 mb-1">Atau via Link URL:</label>
                                 <input
                                     type="url"
-                                    required
-                                    className="w-full p-3 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all text-sm font-medium"
+                                    className="w-full p-2 bg-white border border-gray-200 rounded text-sm placeholder:text-gray-400 focus:outline-none focus:border-primary"
                                     value={formData.logo_url}
                                     onChange={(e) => setFormData({ ...formData, logo_url: e.target.value })}
-                                    placeholder="https://example.com/logo.png"
+                                    placeholder="https://"
                                 />
-                                {formData.logo_url && (
-                                    <div className="mt-2 p-2 border rounded-lg bg-gray-50 flex items-center justify-center h-20">
-                                        <img src={formData.logo_url} alt="Preview" className="max-h-full object-contain" onError={(e) => e.target.src = 'https://via.placeholder.com/150?text=Invalid+Image+URL'} />
-                                    </div>
-                                )}
                             </div>
                             <div>
                                 <label className="block text-xs font-bold text-gray-500 mb-1">Kategori Partner</label>

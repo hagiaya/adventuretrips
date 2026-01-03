@@ -6,6 +6,7 @@ import { Save, Loader, AlertCircle, CheckCircle, Upload, X, Plus } from 'lucide-
 const CONTENT_TYPES = {
     'terms_conditions': { type: 'html', label: 'Halaman: Syarat & Ketentuan' },
     'mobile_app_promo': { type: 'app_promo', label: 'Section: Promo Aplikasi Mobile' },
+    'testimonials': { type: 'testimonials', label: 'Section: Testimoni Pelanggan' },
     'site_logo': { type: 'image', label: 'Aset: Logo Website' },
     'site_favicon': { type: 'image', label: 'Aset: Favicon Website' }
 };
@@ -152,6 +153,16 @@ const ContentManagement = () => {
             case 'app_promo':
                 return (
                     <AppPromoEditor
+                        value={formData.content}
+                        onChange={(val) => setFormData({ ...formData, content: val })}
+                        onSave={(val) => handleSave(val)}
+                        onUpload={handleImageUpload}
+                        loading={saving}
+                    />
+                );
+            case 'testimonials':
+                return (
+                    <TestimonialEditor
                         value={formData.content}
                         onChange={(val) => setFormData({ ...formData, content: val })}
                         onSave={(val) => handleSave(val)}
@@ -373,7 +384,8 @@ const AppPromoEditor = ({ value, onChange, onSave, onUpload, loading }) => {
         const file = e.target.files[0];
         if (!file) return;
         try {
-            const url = await onUpload(file, 'promo-assets');
+            // Using 'site-assets' as the unified bucket
+            const url = await onUpload(file, 'site-assets');
             updateField('phoneImage', url);
         } catch (err) {
             alert(err.message);
@@ -518,6 +530,163 @@ const AppPromoEditor = ({ value, onChange, onSave, onUpload, loading }) => {
                 >
                     {loading ? <Loader className="animate-spin" size={18} /> : <Save size={18} />}
                     Simpan Semua Perubahan
+                </button>
+            </div>
+        </div>
+    );
+};
+
+const TestimonialEditor = ({ value, onChange, onSave, onUpload, loading }) => {
+    const [data, setData] = useState([]);
+
+    useEffect(() => {
+        if (value) {
+            try {
+                if (typeof value === 'string' && value.trim().startsWith('[')) {
+                    setData(JSON.parse(value));
+                } else if (Array.isArray(value)) {
+                    setData(value);
+                }
+            } catch (e) {
+                console.error("Failed to parse testimonials JSON", e);
+            }
+        }
+    }, [value]);
+
+    const handleAdd = () => {
+        setData([...data, { name: '', role: '', image: '', text: '', rating: 5 }]);
+    };
+
+    const handleRemove = (index) => {
+        const newData = data.filter((_, i) => i !== index);
+        setData(newData);
+        onChange(JSON.stringify(newData));
+    };
+
+    const handleChange = (index, field, val) => {
+        const newData = [...data];
+        newData[index][field] = val;
+        setData(newData);
+        onChange(JSON.stringify(newData));
+    };
+
+    const handleImageUpload = async (index, e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        try {
+            const url = await onUpload(file, 'testimonials');
+            handleChange(index, 'image', url);
+        } catch (err) {
+            alert(err.message);
+        }
+    };
+
+    return (
+        <div className="space-y-6">
+            <div className="flex justify-between items-center bg-gray-50 p-4 rounded-xl border border-gray-200">
+                <div className="text-sm font-medium text-gray-600">Total {data.length} Testimoni</div>
+                <button
+                    onClick={handleAdd}
+                    className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-blue-700"
+                >
+                    <Plus size={16} /> Tambah Testimoni
+                </button>
+            </div>
+
+            <div className="grid grid-cols-1 gap-6">
+                {data.map((item, idx) => (
+                    <div key={idx} className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm relative group">
+                        <button
+                            onClick={() => handleRemove(idx)}
+                            className="absolute -top-2 -right-2 bg-red-100 text-red-600 p-1.5 rounded-full hover:bg-red-200 opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                            <X size={16} />
+                        </button>
+
+                        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                            <div className="md:col-span-1 space-y-4">
+                                <div className="w-24 h-24 mx-auto md:mx-0 bg-gray-100 rounded-full overflow-hidden border-2 border-gray-200 relative">
+                                    {item.image ? (
+                                        <img src={item.image} alt="Avatar" className="w-full h-full object-cover" />
+                                    ) : (
+                                        <div className="w-full h-full flex items-center justify-center text-gray-400"><Upload size={24} /></div>
+                                    )}
+                                    <label className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 hover:opacity-100 cursor-pointer transition-opacity">
+                                        <input type="file" className="hidden" onChange={(e) => handleImageUpload(idx, e)} />
+                                        <span className="text-[10px] text-white font-bold">GANTI</span>
+                                    </label>
+                                </div>
+                                <div className="text-[10px] text-gray-400 text-center md:text-left">Rekomendasi: 1:1 Aspect Ratio</div>
+                            </div>
+
+                            <div className="md:col-span-3 space-y-4">
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-xs font-bold text-gray-500 mb-1 uppercase">Nama</label>
+                                        <input
+                                            type="text"
+                                            value={item.name}
+                                            onChange={e => handleChange(idx, 'name', e.target.value)}
+                                            className="w-full px-3 py-2 border border-gray-200 rounded font-medium text-sm"
+                                            placeholder="Nama Pelanggan"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-bold text-gray-500 mb-1 uppercase">Pekerjaan / Lokasi</label>
+                                        <input
+                                            type="text"
+                                            value={item.role}
+                                            onChange={e => handleChange(idx, 'role', e.target.value)}
+                                            className="w-full px-3 py-2 border border-gray-200 rounded text-sm text-gray-500"
+                                            placeholder="Travel Vlogger / Jakarta"
+                                        />
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label className="block text-xs font-bold text-gray-500 mb-1 uppercase tracking-wider">Rating</label>
+                                    <div className="flex gap-1">
+                                        {[1, 2, 3, 4, 5].map(star => (
+                                            <button
+                                                key={star}
+                                                onClick={() => handleChange(idx, 'rating', star)}
+                                                className={`transition-colors ${star <= item.rating ? 'text-yellow-400' : 'text-gray-300'}`}
+                                            >
+                                                ⭐
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label className="block text-xs font-bold text-gray-500 mb-1 uppercase">Testimoni</label>
+                                    <textarea
+                                        value={item.text}
+                                        onChange={e => handleChange(idx, 'text', e.target.value)}
+                                        className="w-full px-3 py-2 border border-gray-200 rounded text-sm h-24 resize-none leading-relaxed"
+                                        placeholder="Tuliskan pengalaman pelanggan..."
+                                    />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                ))}
+
+                {data.length === 0 && (
+                    <div className="text-center py-12 bg-gray-50 border-2 border-dashed border-gray-200 rounded-xl text-gray-400 italic">
+                        Belum ada testimoni. Klik + Tambah Testimoni untuk memulai.
+                    </div>
+                )}
+            </div>
+
+            <div className="flex justify-end pt-6 border-t border-gray-100">
+                <button
+                    onClick={() => onSave(JSON.stringify(data))}
+                    disabled={loading}
+                    className="bg-primary text-white px-8 py-3 rounded-xl font-bold hover:bg-pink-700 transition-colors shadow-lg shadow-pink-200 flex items-center gap-2 disabled:opacity-70"
+                >
+                    {loading ? <Loader className="animate-spin" size={18} /> : <Save size={18} />}
+                    Simpan Testimoni
                 </button>
             </div>
         </div>

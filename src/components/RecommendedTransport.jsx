@@ -58,14 +58,16 @@ const RecommendedTransport = () => {
 
     // Filter only Transportation
     const transports = trips.filter(t => {
+        const isRecommended = t.is_recommended === true;
         const category = (t.category || t.features?.category || '').toLowerCase();
-        return category.includes('transport') ||
+        const isMatch = category.includes('transport') ||
             category.includes('sewa') ||
             category.includes('mpv') ||
             category.includes('suv') ||
             category.includes('bus') ||
             category.includes('minibus') ||
             category.includes('luxury');
+        return isRecommended && isMatch;
     }).slice(0, 4);
 
     if (transports.length === 0) return null;

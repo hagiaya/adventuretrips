@@ -6,6 +6,7 @@ import { supabase } from '../lib/supabaseClient';
 import TripReviews from './TripReviews';
 import TripCalendar from './TripCalendar';
 import { formatNumber } from '../utils/formatters';
+import { addToRecentlyViewed } from '../utils/recentlyViewed';
 
 const TripDetail = ({ mobileMode = false }) => {
     const { id } = useParams();
@@ -134,6 +135,8 @@ const TripDetail = ({ mobileMode = false }) => {
                     console.error("Failed to increment view:", error);
                 } else {
                     setViewCount(prev => prev + 1);
+                    // Add to local history
+                    addToRecentlyViewed(trip.id);
                 }
             }
         };

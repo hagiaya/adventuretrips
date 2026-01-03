@@ -6,7 +6,7 @@ const Footer = () => {
     const paymentPartners = [
         { name: "BCA", logo: "https://upload.wikimedia.org/wikipedia/commons/5/5c/Bank_Central_Asia.svg" },
         { name: "Mandiri", logo: "https://upload.wikimedia.org/wikipedia/commons/a/ad/Bank_Mandiri_logo_2016.svg" },
-        { name: "BNI", logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/1/16/Logo_BNI_46.png/800px-Logo_BNI_46.png" },
+        { name: "BNI", logo: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR16H3Tdq6MhU96TWx-bXtiZreLMBUoCMl60Q&s" },
         { name: "BRI", logo: "https://upload.wikimedia.org/wikipedia/commons/6/68/BANK_BRI_logo.svg" },
         { name: "BSI", logo: "https://upload.wikimedia.org/wikipedia/commons/a/a0/Bank_Syariah_Indonesia.svg" },
         { name: "QRIS", logo: "https://upload.wikimedia.org/wikipedia/commons/a/a2/Logo_QRIS.svg" },
@@ -71,7 +71,7 @@ const Footer = () => {
                         <li><a href="#" className="hover:text-primary transition-colors">Open Trip</a></li>
                         <li><a href="#" className="hover:text-primary transition-colors">Private Trip</a></li>
                         <li><Link to="/terms-conditions" className="hover:text-primary transition-colors">Syarat dan Ketentuan</Link></li>
-                        <li><a href="#" className="hover:text-primary transition-colors">Kebijakan Privasi</a></li>
+                        <li><a href="/terms-conditions" className="hover:text-primary transition-colors">Kebijakan Privasi</a></li>
                     </ul>
                 </div>
 

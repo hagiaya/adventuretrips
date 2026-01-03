@@ -52,8 +52,9 @@ const RecommendedAccommodations = () => {
 
     // Filter only Accommodation
     const hotels = trips.filter(t => {
+        const isRecommended = t.is_recommended === true;
         const category = (t.category || t.features?.category || '').toLowerCase();
-        return category.includes('accommodation') ||
+        const isMatch = category.includes('accommodation') ||
             category === 'stay' ||
             category.includes('penginapan') ||
             category.includes('hotel') ||
@@ -61,6 +62,7 @@ const RecommendedAccommodations = () => {
             category.includes('resort') ||
             category.includes('homestay') ||
             category.includes('glamping');
+        return isRecommended && isMatch;
     }).slice(0, 4);
 
     if (hotels.length === 0) return null;
