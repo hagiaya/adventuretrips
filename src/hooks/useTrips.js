@@ -90,8 +90,8 @@ export const useTrips = () => {
                             id: item.id?.toString(),
                             image: item.image_url || item.image,
                             gallery: item.gallery || [item.image_url],
-                            rating: item.rating || "4.8",
                             reviews: item.reviews_count || "0",
+                            rating: (parseInt(item.reviews_count) > 0 && item.rating !== null) ? item.rating : 0,
                             views: item.views_count || 0,
                             duration: item.features?.duration || (Array.isArray(item.itinerary) ? item.itinerary.length + " Hari" : "Lihat Detail"),
                             price: finalDisplayPrice,
@@ -138,8 +138,8 @@ export const useTrip = (id) => {
                     id: data.id?.toString(),
                     image: data.image_url || data.image,
                     gallery: data.gallery || [data.image_url || data.image],
-                    rating: data.rating || "4.8",
                     reviews: data.reviews_count || "0", // Map DB column to prop
+                    rating: (parseInt(data.reviews_count) > 0 && data.rating !== null) ? data.rating : 0,
                     // Ensure JSONB fields are parsed if Supabase returns them as strings (usually auto-parsed by JS client)
                     itinerary: data.itinerary || data.features?.itinerary || [],
                     includes: data.includes || data.features?.includes || [],

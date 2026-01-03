@@ -20,7 +20,7 @@ const TripCard = ({ id, image, title, location, price, rating, category, mobileM
                 />
 
                 <div className="absolute top-3 right-3 bg-white/95 backdrop-blur-sm px-2 py-1 rounded-md flex items-center gap-1 shadow-sm">
-                    <Star className="w-3.5 h-3.5 text-secondary fill-yellow-400" />
+                    <Star className={`w-3.5 h-3.5 ${parseFloat(rating) > 0 ? 'text-secondary fill-yellow-400' : 'text-gray-300 fill-gray-100'}`} />
                     <span className="text-xs font-bold text-gray-700">{rating}</span>
                 </div>
                 {/* Discount Badge */}
