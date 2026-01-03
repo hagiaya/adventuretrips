@@ -1,5 +1,7 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
+import { supabase } from './lib/supabaseClient'; // Moved to top
+
 import Header from './components/Header';
 import Hero from './components/Hero';
 import PopularTrips from './components/PopularTrips';
@@ -14,7 +16,6 @@ import SpecialOffers from './components/SpecialOffers';
 import RecommendedAccommodations from './components/RecommendedAccommodations';
 import RecommendedTransport from './components/RecommendedTransport';
 import Testimonials from './components/Testimonials';
-
 
 import BlogSection from './components/BlogSection';
 import MobileAppMenu from './components/MobileAppMenu';
@@ -48,6 +49,10 @@ import PaymentSettings from './pages/admin/PaymentSettings';
 import SystemSettings from './pages/admin/SystemSettings';
 import AccommodationCategoryManagement from './pages/admin/AccommodationCategoryManagement';
 import PopupManagement from './pages/admin/PopupManagement';
+import ContentManagement from './pages/admin/ContentManagement';
+
+import LoginModal from './components/LoginModal'; // Moved to top
+import PaymentSuccess from './pages/PaymentSuccess'; // Moved to top
 
 const ScrollToTop = () => {
   const { pathname } = useLocation();
@@ -57,8 +62,32 @@ const ScrollToTop = () => {
   return null;
 };
 
-import LoginModal from './components/LoginModal';
-import PaymentSuccess from './pages/PaymentSuccess';
+const GlobalSettings = () => {
+  React.useEffect(() => {
+    const fetchFavicon = async () => {
+      try {
+        const { data } = await supabase
+          .from('site_content')
+          .select('content')
+          .eq('key', 'site_favicon')
+          .single();
+        if (data?.content) {
+          let link = document.querySelector("link[rel~='icon']");
+          if (!link) {
+            link = document.createElement('link');
+            link.rel = 'icon';
+            document.head.appendChild(link);
+          }
+          link.href = data.content;
+        }
+      } catch (e) {
+        console.error("Failed to fetch favicon", e);
+      }
+    };
+    fetchFavicon();
+  }, []);
+  return null;
+};
 
 const Layout = ({ children }) => {
   const location = useLocation();
@@ -136,6 +165,7 @@ const App = () => {
   return (
     <Router>
       <ScrollToTop />
+      <GlobalSettings />
       <Layout>
         <Routes>
           <Route path="/" element={<Home />} />
@@ -164,6 +194,7 @@ const App = () => {
 
           <Route element={<AdminLayout />}>
             <Route path="/admin/dashboard" element={<DashboardHome />} />
+            <Route path="/admin/content" element={<ContentManagement />} />
             <Route path="/admin/banners" element={<BannerManagement />} />
             <Route path="/admin/popups" element={<PopupManagement />} />
             <Route path="/admin/products/trips" element={<ProductManagement initialProductType="Trip" />} />

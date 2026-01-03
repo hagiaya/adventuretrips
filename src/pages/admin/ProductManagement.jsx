@@ -40,7 +40,10 @@ const ProductManagement = ({ initialProductType = null }) => {
         facilitiesText: '', // for Accommodation
         specsText: '', // for Transport
         vehicleType: 'Car', // for Transport
-        organizer: 'Pandooin'
+        vehicleType: 'Car', // for Transport
+        organizer: 'Adventure Trip',
+        is_popular: false,
+        is_recommended: false
     });
 
     const [selectedFiles, setSelectedFiles] = useState([]);
@@ -155,6 +158,8 @@ const ProductManagement = ({ initialProductType = null }) => {
                 discount_percentage: product.discount_percentage || 0,
                 category: product.category,
                 productType: type,
+                is_popular: product.is_popular || false,
+                is_recommended: product.is_recommended || false,
                 description: product.description || '',
                 image_url: product.image_url,
                 gallery: gallery,
@@ -207,7 +212,9 @@ const ProductManagement = ({ initialProductType = null }) => {
                 facilitiesText: '',
                 specsText: '',
                 vehicleType: 'Car',
-                organizer: 'Pandooin'
+                organizer: 'Adventure Trip',
+                is_popular: false,
+                is_recommended: false
             });
         }
         setIsModalOpen(true);
@@ -485,7 +492,9 @@ const ProductManagement = ({ initialProductType = null }) => {
                 features: features,
                 schedules: formData.schedules,
                 discount_percentage: formData.discount_percentage || 0,
-                organizer: formData.organizer || 'Pandooin'
+                organizer: formData.organizer || 'Adventure Trip',
+                is_popular: formData.is_popular,
+                is_recommended: formData.is_recommended
             };
 
             let error;
@@ -727,6 +736,42 @@ const ProductManagement = ({ initialProductType = null }) => {
 
                                         <div>
                                             <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                Slug (URL SEO Friendly)
+                                            </label>
+                                            <input
+                                                type="text"
+                                                className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary/20 outline-none bg-gray-50 text-sm font-mono text-gray-600"
+                                                value={formData.slug}
+                                                onChange={e => setFormData({ ...formData, slug: e.target.value.toLowerCase().replace(/ /g, '-') })}
+                                                placeholder="contoh-nama-trip"
+                                            />
+                                            <p className="text-[10px] text-gray-400 mt-1">Biarkan kosong untuk generate otomatis dari Judul.</p>
+                                        </div>
+
+                                        <div className="flex gap-6 pt-2">
+                                            <label className="flex items-center gap-2 cursor-pointer">
+                                                <input
+                                                    type="checkbox"
+                                                    className="w-5 h-5 rounded border-gray-300 text-primary focus:ring-primary"
+                                                    checked={formData.is_popular}
+                                                    onChange={e => setFormData({ ...formData, is_popular: e.target.checked })}
+                                                />
+                                                <span className="text-sm font-medium text-gray-700">Set as Popular</span>
+                                            </label>
+
+                                            <label className="flex items-center gap-2 cursor-pointer">
+                                                <input
+                                                    type="checkbox"
+                                                    className="w-5 h-5 rounded border-gray-300 text-primary focus:ring-primary"
+                                                    checked={formData.is_recommended}
+                                                    onChange={e => setFormData({ ...formData, is_recommended: e.target.checked })}
+                                                />
+                                                <span className="text-sm font-medium text-gray-700">Set as Recommended</span>
+                                            </label>
+                                        </div>
+
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">
                                                 {formData.productType === 'Transportation' ? 'Lokasi Garasi / Kota' : 'Lokasi'}
                                             </label>
                                             <input
@@ -845,7 +890,7 @@ const ProductManagement = ({ initialProductType = null }) => {
                                                 className="w-full px-4 py-2 border border-blue-100 bg-blue-50/50 rounded-lg focus:ring-2 focus:ring-primary/20 outline-none font-bold text-primary"
                                                 value={formData.organizer}
                                                 onChange={e => setFormData({ ...formData, organizer: e.target.value })}
-                                                placeholder="Contoh: Pandooin"
+                                                placeholder="Contoh: Adventure Trip"
                                             />
                                         </div>
 

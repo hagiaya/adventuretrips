@@ -287,7 +287,7 @@ const AccommodationDetail = ({ mobileMode = false }) => {
                                     {category || 'Akomodasi'}
                                 </span>
                                 <span className="bg-blue-50 text-blue-600 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border border-blue-100">
-                                    {organizer || 'Pandooin'}
+                                    {organizer || 'Adventure Trip'}
                                 </span>
                             </div>
                             <div className="flex items-start justify-between">

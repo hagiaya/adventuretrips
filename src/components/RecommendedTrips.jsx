@@ -44,7 +44,7 @@ const TripCard = ({ id, image, title, location, price, rating, views, duration, 
                 {/* Trip Oleh Badge */}
                 <div className="mb-2">
                     <p className="text-[11px] text-gray-500 font-medium">
-                        Trip Oleh <span className="text-primary font-bold">{organizer || 'Pandooin'}</span>
+                        Trip Oleh <span className="text-primary font-bold">{organizer || 'Adventure Trip'}</span>
                     </p>
                 </div>
 
@@ -70,8 +70,14 @@ const TripCard = ({ id, image, title, location, price, rating, views, duration, 
 
 const RecommendedTrips = () => {
     const { trips } = useTrips();
-    // Select specific trips for recommendation, or just random ones
-    const recommendedTrips = trips.slice(0, 4); // Just taking the first 4 for now to ensure they work
+
+    // Select specific trips for recommendation: 
+    // 1. Manually set 'is_recommended'
+    // 2. Fallback to newest (since useTrips orders by created_at desc)
+    const recommendedTrips = trips
+        .filter(t => t.is_recommended)
+        .concat(trips.filter(t => !t.is_recommended))
+        .slice(0, 4);
 
     return (
         <section className="py-16 bg-white">

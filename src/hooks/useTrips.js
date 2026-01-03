@@ -96,7 +96,7 @@ export const useTrips = () => {
                             duration: item.features?.duration || (Array.isArray(item.itinerary) ? item.itinerary.length + " Hari" : "Lihat Detail"),
                             price: finalDisplayPrice,
                             original_price: finalOriginalPrice,
-                            organizer: item.organizer || item.features?.organizer || 'Pandooin'
+                            organizer: item.organizer || item.features?.organizer || 'Adventure Trip'
                         };
                     });
                     setTrips(normalizedTrips);
@@ -124,11 +124,15 @@ export const useTrip = (id) => {
         if (!id) return;
         setLoading(true);
         try {
+            // Determine search column based on input format (UUID vs Slug)
+            const isUuid = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(id);
+            const column = isUuid ? 'id' : 'slug';
+
             // Try fetching from Supabase first
             const { data, error } = await supabase
                 .from('products')
                 .select('*')
-                .eq('id', id)
+                .eq(column, id)
                 .eq('is_deleted', false)
                 .single();
 

@@ -47,7 +47,7 @@ const TripCard = ({ id, image, title, location, price, rating, category, mobileM
 
                 <div className="mb-3 flex flex-col gap-1">
                     <p className="text-[10px] md:text-[11px] text-gray-500 font-medium">
-                        Trip Oleh <span className="text-primary font-bold">{organizer || 'Pandooin'}</span>
+                        Trip Oleh <span className="text-primary font-bold">{organizer || 'Adventure Trip'}</span>
                     </p>
                     <div className="flex justify-between items-center">
                         <div className="flex items-center gap-1.5 text-gray-500 text-xs font-medium">

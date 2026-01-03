@@ -386,7 +386,7 @@ const TripDetail = ({ mobileMode = false }) => {
     const subtotal = (pricePerPaxFinal * pax) + totalVariantPrice;
 
     // Tax
-    const taxRate = (paymentSettings?.tax_percentage ?? 10) / 100;
+    const taxRate = (paymentSettings?.tax_percentage ?? 0) / 100;
     const taxAmount = Math.round(subtotal * taxRate);
     const totalWithTax = subtotal + taxAmount;
     const totalToPay = paymentType === 'dp' ? Math.round(totalWithTax * 0.5) : totalWithTax;
@@ -704,17 +704,22 @@ const TripDetail = ({ mobileMode = false }) => {
     };
 
     const handleShare = async () => {
+        // Construct URL using Slug if available, otherwise ID
+        // Note: We use window.location.origin to get the current domain (localhost or production)
+        const urlIdentifier = trip?.slug || trip?.id;
+        const shareUrl = `${window.location.origin}/trip/${urlIdentifier}`;
+
         const shareData = {
             title: trip?.title,
             text: `Yuk liburan bareng ke ${trip?.title}! Cek detailnya di sini:`,
-            url: window.location.href,
+            url: shareUrl,
         };
 
         try {
             if (navigator.share) {
                 await navigator.share(shareData);
             } else {
-                await navigator.clipboard.writeText(window.location.href);
+                await navigator.clipboard.writeText(shareUrl);
                 alert("Link berhasil disalin ke clipboard!");
             }
         } catch (err) {
@@ -802,7 +807,7 @@ const TripDetail = ({ mobileMode = false }) => {
                             {/* Trip Oleh Badge */}
                             <div className="mb-4">
                                 <p className="text-sm text-gray-500 font-medium">
-                                    Trip Oleh <span className="text-primary font-bold">{trip.organizer || 'Pandooin'}</span>
+                                    Trip Oleh <span className="text-primary font-bold">{trip.organizer || 'Adventure Trip'}</span>
                                 </p>
                             </div>
                             <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2 leading-tight">{title}</h1>

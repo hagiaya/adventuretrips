@@ -59,7 +59,7 @@ const TripCard = ({ id, image, title, location, price, rating, category, views, 
                 {/* Trip Oleh Badge */}
                 <div className="mb-2">
                     <p className="text-[11px] text-gray-500 font-medium">
-                        Trip Oleh <span className="text-primary font-bold">{organizer || 'Pandooin'}</span>
+                        Trip Oleh <span className="text-primary font-bold">{organizer || 'Adventure Trip'}</span>
                     </p>
                 </div>
 
@@ -109,7 +109,12 @@ const PopularTrips = () => {
                     <div className="text-center py-12 text-gray-400">Memuat data...</div>
                 ) : (
                     <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-8">
-                        {trips.slice(0, 4).map((trip) => <TripCard key={trip.id} {...trip} />)}
+                        {trips
+                            .filter(t => t.is_popular) // 1. Filter manually set popular items
+                            .concat(trips.filter(t => !t.is_popular).sort((a, b) => b.views - a.views)) // 2. Concat with others sorted by views
+                            .slice(0, 4) // 3. Take top 4
+                            .map((trip) => <TripCard key={trip.id} {...trip} />)
+                        }
                     </div>
                 )}
 

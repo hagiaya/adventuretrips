@@ -52,17 +52,27 @@ const TransactionManagement = () => {
         if (!window.confirm("Apakah Anda yakin ingin menghapus transaksi ini? Data yang dihapus tidak dapat dikembalikan.")) return;
 
         try {
-            const { error } = await supabase
+            const { data, error } = await supabase
                 .from('transactions')
                 .delete()
-                .eq('id', id);
+                .eq('id', id)
+                .select();
 
             if (error) throw error;
+
+            // Check if backend actually deleted anything (RLS check)
+            if (!data || data.length === 0) {
+                alert("Gagal menghapus: Izin ditolak atau transaksi tidak ditemukan. Pastikan Anda memiliki akses Admin.");
+                return;
+            }
 
             // Remove from local state
             setTransactions(prev => prev.filter(t => t.id !== id));
             setSelectedIds(prev => prev.filter(sid => sid !== id));
             alert("Transaksi berhasil dihapus.");
+
+            // Force Refetch
+            await fetchTransactions();
         } catch (error) {
             console.error("Error deleting transaction:", error);
             alert("Gagal menghapus transaksi: " + error.message);
@@ -75,17 +85,30 @@ const TransactionManagement = () => {
 
         setLoading(true);
         try {
-            const { error } = await supabase
+            const { data, error } = await supabase
                 .from('transactions')
                 .delete()
-                .in('id', selectedIds);
+                .in('id', selectedIds)
+                .select();
 
             if (error) throw error;
 
-            // Remove from local state
+            if (!data || data.length === 0) {
+                alert("Operasi selesai, namun tidak ada data yang terhapus. Cek izin akses database.");
+                setLoading(false);
+                return;
+            }
+
+            // Remove from local state immediately for responsiveness
             setTransactions(prev => prev.filter(t => !selectedIds.includes(t.id)));
+
+            // Clear selection
             setSelectedIds([]);
+
             alert("Transaksi terpilih berhasil dihapus.");
+
+            // Force Refetch to ensure sync with DB (Handles triggers/cascades)
+            await fetchTransactions();
         } catch (error) {
             console.error("Error bulk deleting:", error);
             alert("Gagal menghapus beberapa transaksi: " + error.message);
@@ -481,24 +504,37 @@ const TransactionManagement = () => {
                                         <label className="text-xs font-bold text-gray-400 uppercase">Jadwal Trip</label>
                                         <p className="font-medium text-gray-900 mt-1">
                                             {(() => {
-                                                if (!viewTransaction.date) return '-';
+                                                // 1. Try multiple date fields (date, booking_date, travel_date, or nested in metadata)
+                                                // Note: Check if metadata exists and has date
+                                                const dateRaw = viewTransaction.date ||
+                                                    viewTransaction.booking_date ||
+                                                    viewTransaction.travel_date ||
+                                                    (viewTransaction.metadata && viewTransaction.metadata.date);
 
-                                                const startDate = parseISO(viewTransaction.date);
-                                                let durationDays = 1;
-                                                // Try to get duration from product features or root
-                                                const durationStr = viewTransaction.product?.features?.duration || viewTransaction.product?.duration || '';
+                                                if (!dateRaw) return '-';
 
-                                                if (durationStr) {
-                                                    const match = durationStr.toString().match(/(\d+)/);
-                                                    if (match) durationDays = parseInt(match[0]);
+                                                try {
+                                                    const startDate = parseISO(dateRaw);
+                                                    if (isNaN(startDate)) return '-';
+
+                                                    let durationDays = 1;
+                                                    // Try to get duration from product features or root
+                                                    const durationStr = viewTransaction.product?.features?.duration || viewTransaction.product?.duration || '';
+
+                                                    if (durationStr) {
+                                                        const match = durationStr.toString().match(/(\d+)/);
+                                                        if (match) durationDays = parseInt(match[0]);
+                                                    }
+
+                                                    const endDate = addDays(startDate, durationDays - 1);
+
+                                                    if (durationDays > 1) {
+                                                        return `${format(startDate, 'dd MMM', { locale: id })} - ${format(endDate, 'dd MMM yyyy', { locale: id })}`;
+                                                    }
+                                                    return format(startDate, 'dd MMMM yyyy', { locale: id });
+                                                } catch (e) {
+                                                    return dateRaw; // Return raw string if parse fails
                                                 }
-
-                                                const endDate = addDays(startDate, durationDays - 1);
-
-                                                if (durationDays > 1) {
-                                                    return `${format(startDate, 'dd MMM', { locale: id })} - ${format(endDate, 'dd MMM yyyy', { locale: id })}`;
-                                                }
-                                                return format(startDate, 'dd MMMM yyyy', { locale: id });
                                             })()}
                                         </p>
                                     </div>
@@ -585,7 +621,7 @@ const TransactionManagement = () => {
                                         <span className="font-bold text-gray-900">Rp {Number(viewTransaction.amount).toLocaleString('id-ID')}</span>
                                     </div>
                                     <div className="pt-2 border-t border-gray-100 text-xs text-gray-400">
-                                        * Harga sudah termasuk layanan & pajak.
+                                        * Harga sudah termasuk Layanan, Asuransi, & Biaya Lainnya.
                                     </div>
                                 </div>
                             </div>

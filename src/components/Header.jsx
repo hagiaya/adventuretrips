@@ -11,8 +11,20 @@ const Header = () => {
     const [isSearchOpen, setIsSearchOpen] = useState(false);
     const [balance, setBalance] = useState(0);
     const [searchQuery, setSearchQuery] = useState('');
+    const [logoUrl, setLogoUrl] = useState('/logo.png');
 
     useEffect(() => {
+        // Fetch Logo
+        const fetchLogo = async () => {
+            const { data } = await supabase
+                .from('site_content')
+                .select('content')
+                .eq('key', 'site_logo')
+                .single();
+            if (data?.content) setLogoUrl(data.content);
+        };
+        fetchLogo();
+
         const fetchBalance = async (userId) => {
             try {
                 const { data, error } = await supabase
@@ -94,7 +106,7 @@ const Header = () => {
                         {/* Logo */}
                         {/* Logo */}
                         <Link to="/" className="flex items-center gap-2">
-                            <img src="/logo.png" alt="Adventure Trip" className="w-8 h-8 object-contain" />
+                            <img src={logoUrl} alt="Adventure Trip" className="w-8 h-8 object-contain" />
                             <div className="text-2xl font-bold text-pink-500 tracking-tight">Adventure Trip</div>
                         </Link>
                     </div>
@@ -215,7 +227,7 @@ const Header = () => {
                     <div className="fixed inset-y-0 right-0 w-[85%] max-w-[320px] bg-white shadow-2xl p-6 overflow-y-auto animate-slideInRight">
                         <div className="flex items-center justify-between mb-8">
                             <Link to="/" onClick={() => setIsMobileMenuOpen(false)} className="flex items-center gap-2">
-                                <img src="/logo.png" alt="Logo" className="w-8 h-8 object-contain" />
+                                <img src={logoUrl} alt="Logo" className="w-8 h-8 object-contain" />
                                 <span className="font-bold text-xl text-pink-500">Adventure Trip</span>
                             </Link>
                             <button

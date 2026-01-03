@@ -14,7 +14,7 @@ export const trips = [
         rating: "4.8",
         reviews: 124,
         category: "Open Trip",
-        organizer: "Pandooin",
+        organizer: "Adventure Trip",
         views: "12.5k",
         description: "Nikmati petualangan tak terlupakan berlayar di Labuan Bajo selama 3 hari 2 malam. Mengunjungi Pulau Padar, Pulau Komodo, Pink Beach, dan spot snorkeling terbaik dengan kapal Phinisi nyaman ber-AC.",
         itinerary: [
@@ -70,7 +70,7 @@ export const trips = [
         rating: "4.9",
         reviews: 312,
         category: "Private Trip",
-        organizer: "Pandooin",
+        organizer: "Adventure Trip",
         views: "8.2k",
         description: "Saksikan keindahan matahari terbit Bromo yang ikonik tanpa ribet menginap. Penjemputan dari Malang tengah malam, langsung menuju penanjakan dengan Jeep 4WD.",
         itinerary: [
@@ -119,7 +119,7 @@ export const trips = [
         rating: "4.7",
         reviews: 89,
         category: "Available Today",
-        organizer: "Pandooin",
+        organizer: "Adventure Trip",
         views: "15k",
         description: "Jelajahi keindahan Nusa Penida bagian Barat dan Timur dalam satu hari. Kunjungi Kelingking Beach, Diamond Beach, dan snorkeling di Crystal Bay.",
         itinerary: [
@@ -151,7 +151,7 @@ export const trips = [
         rating: "5.0",
         reviews: 42,
         category: "Luxury",
-        organizer: "Pandooin",
+        organizer: "Adventure Trip",
         views: "21k",
         description: "Surga tersembunyi di Timur Indonesia. Trip eksklusif mengunjungi Piaynemo, Wayag, dan spot diving kelas dunia di Raja Ampat.",
         itinerary: [
@@ -180,7 +180,7 @@ export const trips = [
         rating: "4.6",
         reviews: 67,
         category: "Open Trip",
-        organizer: "Pandooin",
+        organizer: "Adventure Trip",
         views: "5.3k",
         description: "Pendakian malam hari untuk menyaksikan fenomena api biru (Blue Fire) yang langka di dunia, serta sunrise di kawah asam terbesar.",
         itinerary: [
@@ -210,7 +210,7 @@ export const trips = [
         rating: "4.8",
         reviews: 156,
         category: "Family Trip",
-        organizer: "Pandooin",
+        organizer: "Adventure Trip",
         views: "9.1k",
         description: "Menjelajahi warisan budaya dunia Candi Borobudur dan Prambanan, serta menikmati suasana khas Yogyakarta yang ngangenin.",
         itinerary: [
@@ -239,7 +239,7 @@ export const trips = [
         rating: "4.7",
         reviews: 98,
         category: "Best Seller",
-        organizer: "Pandooin",
+        organizer: "Adventure Trip",
         views: "3.4k",
         description: "Napak tilas Laskar Pelangi dan jelajah pulau-pulau granit eksotis di Belitung. Pantai Tanjung Tinggi, Pulau Lengkuas, dan Danau Kaolin.",
         itinerary: [
@@ -267,7 +267,7 @@ export const trips = [
         rating: "4.9",
         reviews: 55,
         category: "Water Sports",
-        organizer: "Pandooin",
+        organizer: "Adventure Trip",
         views: "6.7k",
         description: "Berenang bersama Whale Shark di Talisayan, melihat ubur-ubur tanpa sengat di Kakaban, dan penyu di Sangalaki. Trip impian para pecinta laut.",
         itinerary: [
