@@ -258,6 +258,7 @@ const TransactionManagement = () => {
         switch (status?.toLowerCase()) {
             case 'confirmed':
             case 'success': case 'paid': return 'bg-green-50 text-green-700 border-green-200';
+            case 'dp_confirmed': return 'bg-indigo-50 text-indigo-700 border-indigo-200 ring-1 ring-indigo-300';
             case 'pending': return 'bg-yellow-50 text-yellow-700 border-yellow-200';
             case 'waiting_proof': return 'bg-orange-50 text-orange-700 border-orange-200';
             case 'verification_pending': return 'bg-blue-50 text-blue-700 border-blue-200 ring-1 ring-blue-300';
@@ -314,22 +315,118 @@ const TransactionManagement = () => {
     };
 
     const handleStatusUpdate = async (id, newStatus) => {
-        const confirmMsg = newStatus === 'confirmed' ? "Konfirmasi pembayaran ini valid?" :
-            newStatus === 'cancelled' ? "Tolak pembayaran ini?" :
-                `Ubah status jadi ${newStatus}?`;
+        const transaction = transactions.find(t => t.id === id);
+        if (!transaction) return;
+
+        let confirmMsg = `Ubah status jadi ${newStatus}?`;
+
+        // Custom message logic
+        if (newStatus === 'confirmed') {
+            if (transaction.items.includes('(DP)')) {
+                confirmMsg = "Konfirmasi pembayaran DP ini? Status akan menjadi 'DP Lunas'.";
+            } else {
+                confirmMsg = "Konfirmasi pembayaran Full Payment ini? Kuota akan berkurang.";
+            }
+        } else if (newStatus === 'lunas_final') {
+            confirmMsg = "Konfirmasi pelunasan akhir? Transaksi akan menjadi 'Confirmed' (Lunas Total).";
+        } else if (newStatus === 'cancelled') {
+            confirmMsg = "Tolak pembayaran ini?";
+        }
 
         if (!window.confirm(confirmMsg)) return;
 
         try {
+            let updatePayload = { status: newStatus };
+
+            // Logic for DP flow
+            // 1. If currently DP (pending/verification_pending) -> confirmed (DP Lunas)
+            if (newStatus === 'confirmed' && transaction.items.includes('(DP)')) {
+                updatePayload = { status: 'dp_confirmed' }; // Intermediate status
+            }
+
+            // 2. If currently 'dp_confirmed' -> 'confirmed' (Final Lunas) via custom action
+            if (newStatus === 'lunas_final') {
+                updatePayload = { status: 'confirmed' };
+            }
+
             const { error } = await supabase
                 .from('transactions')
-                .update({ status: newStatus })
+                .update(updatePayload)
                 .eq('id', id);
 
             if (error) throw error;
+
+            // --- QUOTA DECREMENT LOGIC ---
+            // Decrease quota ONLY when reaching final 'confirmed' or 'dp_confirmed' status for the FIRST time
+            // To prevent double counting, simple check if previous status was NOT confirmed/dp_confirmed
+            const isBecomingValid = (newStatus === 'confirmed' || updatePayload.status === 'dp_confirmed');
+            const wasValid = ['confirmed', 'dp_confirmed', 'success', 'paid'].includes(transaction.status);
+
+            if (isBecomingValid && !wasValid && transaction.product && transaction.date) {
+                // Extract pax count from items string or participants array
+                let paxCount = 1;
+                if (transaction.participants && Array.isArray(transaction.participants) && transaction.participants.length > 0) {
+                    paxCount = transaction.participants.length;
+                } else {
+                    // Fallback: Try to parse from items string (e.g. "Trip Name ... - 2 Pax ...")
+                    const match = (transaction.items || "").match(/(\d+)\s*Pax/i);
+                    if (match) {
+                        paxCount = parseInt(match[1]);
+                    }
+                }
+
+                // --- DIRECT FRONTEND UPDATE (More Reliable) ---
+                try {
+                    // 1. Fetch latest product data
+                    const { data: freshProduct, error: fetchErr } = await supabase
+                        .from('products')
+                        .select('schedules')
+                        .eq('id', transaction.product.id)
+                        .single();
+
+                    if (fetchErr || !freshProduct) throw new Error(fetchErr?.message || "Product not found");
+
+                    // 2. Find and Update Schedule
+                    const schedules = freshProduct.schedules || [];
+                    let updated = false;
+
+                    const newSchedules = schedules.map(sched => {
+                        // Compare dates (ensure strings match)
+                        if (sched.date === transaction.date) {
+                            const currentBooked = parseInt(sched.booked || 0);
+                            updated = true;
+                            return {
+                                ...sched,
+                                booked: currentBooked + paxCount
+                            };
+                        }
+                        return sched;
+                    });
+
+                    if (updated) {
+                        // 3. Push update back to DB
+                        const { error: updateErr } = await supabase
+                            .from('products')
+                            .update({ schedules: newSchedules })
+                            .eq('id', transaction.product.id);
+
+                        if (updateErr) throw updateErr;
+                        console.log("Quota updated successfully via Direct Update");
+                    } else {
+                        console.warn(`No schedule found matching date: ${transaction.date}`);
+                        alert(`Warning: Could not find schedule for date ${transaction.date} to update quota.`);
+                    }
+
+                } catch (directErr) {
+                    console.error("Direct Quota Update Failed:", directErr);
+                    alert("Failed to update product quota: " + directErr.message);
+                }
+            }
+            // -----------------------------
+
             fetchTransactions();
             if (viewTransaction?.id === id) {
-                setViewTransaction(prev => ({ ...prev, status: newStatus }));
+                setViewTransaction(prev => ({ ...prev, status: updatePayload.status }));
             }
         } catch (error) {
             alert('Gagal update status: ' + error.message);
@@ -365,16 +462,16 @@ const TransactionManagement = () => {
 
             let message = '';
             if (type === 'pending') {
-                message = `Halo! ✈️\n\nKami mengingatkan pesanan *#${invoiceId}* (${items}) sebesar *Rp ${amountStr}* belum diselesaikan.\n\nMohon segera lakukan pembayaran agar reservasi Anda tidak dibatalkan otomatis. Abaikan pesan ini jika sudah membayar.\n\nTerima kasih! 🙏`;
+                message = `Halo! ✈️\n\nKami mengingatkan pesanan * #${invoiceId}* (${items}) sebesar * Rp ${amountStr}* belum diselesaikan.\n\nMohon segera lakukan pembayaran agar reservasi Anda tidak dibatalkan otomatis.Abaikan pesan ini jika sudah membayar.\n\nTerima kasih! 🙏`;
             } else if (type === 'success') {
-                message = `Halo! ✅\n\nPembayaran pesanan *#${invoiceId}* (${items}) sebesar *Rp ${amountStr}* telah *BERHASIL* kami terima.\n\nTerima kasih telah mempercayai layanan kami. Sampai jumpa di perjalanan nanti! 👋`;
+                message = `Halo! ✅\n\nPembayaran pesanan * #${invoiceId}* (${items}) sebesar * Rp ${amountStr}* telah * BERHASIL * kami terima.\n\nTerima kasih telah mempercayai layanan kami.Sampai jumpa di perjalanan nanti! 👋`;
             }
 
             const result = await sendWhatsApp(phone, message);
             if (result.success) {
-                alert(`Notifikasi WhatsApp (${type}) berhasil dikirim ke ${phone}`);
+                alert(`Notifikasi WhatsApp(${type}) berhasil dikirim ke ${phone} `);
             } else {
-                alert(`Gagal mengirim WhatsApp: ${result.error}`);
+                alert(`Gagal mengirim WhatsApp: ${result.error} `);
             }
         } catch (err) {
             alert("Terjadi kesalahan: " + err.message);
@@ -428,7 +525,7 @@ const TransactionManagement = () => {
                 user_id: transaction.user_id,
                 amount: refundAmount,
                 type: 'credit',
-                description: `Refund pembatalan pesanan #${transaction.id.substring(0, 8).toUpperCase()}`
+                description: `Refund pembatalan pesanan #${transaction.id.substring(0, 8).toUpperCase()} `
             });
 
             alert(`Berhasil! Rp ${refundAmount.toLocaleString('id-ID')} telah ditambahkan ke saldo user.`);
@@ -532,7 +629,7 @@ const TransactionManagement = () => {
                                     <div>
                                         <label className="text-xs font-bold text-gray-400 uppercase">Status</label>
                                         <div className="mt-1">
-                                            <span className={`px-3 py-1 rounded-full text-xs font-bold border ${getStatusColor(viewTransaction.status)} uppercase tracking-wider`}>
+                                            <span className={`px - 3 py - 1 rounded - full text - xs font - bold border ${getStatusColor(viewTransaction.status)} uppercase tracking - wider`}>
                                                 {viewTransaction.status}
                                             </span>
                                         </div>
@@ -578,7 +675,7 @@ const TransactionManagement = () => {
                                                     const endDate = addDays(startDate, durationDays - 1);
 
                                                     if (durationDays > 1) {
-                                                        return `${format(startDate, 'dd MMM', { locale: id })} - ${format(endDate, 'dd MMM yyyy', { locale: id })}`;
+                                                        return `${format(startDate, 'dd MMM', { locale: id })} - ${format(endDate, 'dd MMM yyyy', { locale: id })} `;
                                                     }
                                                     return format(startDate, 'dd MMMM yyyy', { locale: id });
                                                 } catch (e) {
@@ -740,7 +837,7 @@ const TransactionManagement = () => {
                     { label: 'Revenue Transportasi', value: revenueStats.transportation, color: 'text-amber-600', bg: 'bg-amber-50' },
                 ].map((item, idx) => (
                     <div key={idx} className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex items-center gap-3">
-                        <div className={`p-2 rounded-lg ${item.bg} ${item.color}`}>
+                        <div className={`p - 2 rounded - lg ${item.bg} ${item.color} `}>
                             <Clock size={20} />
                         </div>
                         <div>
@@ -767,7 +864,7 @@ const TransactionManagement = () => {
                             <button
                                 key={tab.key}
                                 onClick={() => setChartView(tab.key)}
-                                className={`px-4 py-1.5 text-xs font-bold rounded-md transition-all ${chartView === tab.key ? 'bg-white text-primary shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                                className={`px - 4 py - 1.5 text - xs font - bold rounded - md transition - all ${chartView === tab.key ? 'bg-white text-primary shadow-sm' : 'text-gray-500 hover:text-gray-700'} `}
                             >
                                 {tab.label}
                             </button>
@@ -791,7 +888,7 @@ const TransactionManagement = () => {
                                     axisLine={false}
                                     tickLine={false}
                                     tick={{ fontSize: 10, fill: '#64748b' }}
-                                    tickFormatter={(val) => val >= 1000000 ? `${(val / 1000000).toFixed(1)}M` : val >= 1000 ? `${(val / 1000).toFixed(0)}K` : val}
+                                    tickFormatter={(val) => val >= 1000000 ? `${(val / 1000000).toFixed(1)} M` : val >= 1000 ? `${(val / 1000).toFixed(0)} K` : val}
                                 />
                                 <Tooltip
                                     content={({ active, payload }) => {
@@ -837,14 +934,14 @@ const TransactionManagement = () => {
             <div className="space-y-2">
                 <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest pl-1">Filter Status</p>
                 <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
-                    {['all', 'pending', 'waiting_proof', 'verification_pending', 'confirmed', 'refunded', 'cancelled'].map(status => (
+                    {['all', 'pending', 'waiting_proof', 'verification_pending', 'confirmed', 'dp_confirmed', 'refunded', 'cancelled'].map(status => (
                         <button
                             key={status}
                             onClick={() => setStatusFilter(status)}
-                            className={`px-4 py-2 rounded-lg text-xs font-medium whitespace-nowrap transition-colors ${statusFilter === status
+                            className={`px - 4 py - 2 rounded - lg text - xs font - medium whitespace - nowrap transition - colors ${statusFilter === status
                                 ? 'bg-gray-900 text-white shadow-md'
                                 : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
-                                }`}
+                                } `}
                         >
                             {status === 'all' ? 'Semua Status' :
                                 status === 'verification_pending' ? 'Butuh Verifikasi' :
@@ -873,10 +970,10 @@ const TransactionManagement = () => {
                         <button
                             key={type.id}
                             onClick={() => setTypeFilter(type.id)}
-                            className={`px-4 py-2 rounded-lg text-xs font-medium whitespace-nowrap transition-colors ${typeFilter === type.id
+                            className={`px - 4 py - 2 rounded - lg text - xs font - medium whitespace - nowrap transition - colors ${typeFilter === type.id
                                 ? 'bg-primary text-white shadow-md'
                                 : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
-                                }`}
+                                } `}
                         >
                             {type.label}
                         </button>
@@ -944,7 +1041,7 @@ const TransactionManagement = () => {
                                 </tr>
                             ) : (
                                 filteredTransactions.map((t) => (
-                                    <tr key={t.id} className={`hover:bg-gray-50 transition-colors cursor-pointer ${selectedIds.includes(t.id) ? 'bg-blue-50/50' : ''}`} onClick={() => setViewTransaction(t)}>
+                                    <tr key={t.id} className={`hover: bg - gray - 50 transition - colors cursor - pointer ${selectedIds.includes(t.id) ? 'bg-blue-50/50' : ''} `} onClick={() => setViewTransaction(t)}>
                                         <td className="px-6 py-4" onClick={(e) => e.stopPropagation()}>
                                             <button onClick={() => toggleSelectOne(t.id)} className="text-gray-400 hover:text-primary">
                                                 {selectedIds.includes(t.id) ? (
@@ -970,7 +1067,7 @@ const TransactionManagement = () => {
                                             {(() => {
                                                 const type = getTransactionType(t);
                                                 return (
-                                                    <span className={`px-2 py-1 rounded text-[10px] font-bold uppercase ${type.color}`}>
+                                                    <span className={`px - 2 py - 1 rounded text - [10px] font - bold uppercase ${type.color} `}>
                                                         {type.label}
                                                     </span>
                                                 );
@@ -986,7 +1083,7 @@ const TransactionManagement = () => {
                                             </div>
                                         </td>
                                         <td className="px-6 py-4">
-                                            <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold border ${getStatusColor(t.status)} uppercase tracking-wider`}>
+                                            <span className={`px - 2.5 py - 1 rounded - full text - [10px] font - bold border ${getStatusColor(t.status)} uppercase tracking - wider`}>
                                                 {t.status}
                                             </span>
                                         </td>
@@ -1050,6 +1147,14 @@ const TransactionManagement = () => {
                                                         title="Refund ke Saldo"
                                                     >
                                                         <CreditCard size={18} />
+                                                    </button>
+                                                ) : t.status === 'dp_confirmed' ? (
+                                                    <button
+                                                        onClick={(e) => { e.stopPropagation(); handleStatusUpdate(t.id, 'lunas_final'); }}
+                                                        className="p-1.5 bg-indigo-50 text-indigo-600 rounded-lg hover:bg-indigo-100 hover:text-indigo-700 transition-colors border border-indigo-200 tooltip-trigger"
+                                                        title="Konfirmasi Pelunasan Akhir"
+                                                    >
+                                                        <CheckCircle size={18} />
                                                     </button>
                                                 ) : (
                                                     <button className="p-1.5 text-gray-300 pointer-events-none">
