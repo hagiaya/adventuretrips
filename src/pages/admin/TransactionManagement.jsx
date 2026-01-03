@@ -1021,14 +1021,14 @@ const TransactionManagement = () => {
                                                 {t.status === 'verification_pending' ? (
                                                     <>
                                                         <button
-                                                            onClick={() => handleStatusUpdate(t.id, 'confirmed')}
+                                                            onClick={(e) => { e.stopPropagation(); handleStatusUpdate(t.id, 'confirmed'); }}
                                                             className="p-1.5 bg-green-50 text-green-600 rounded-lg hover:bg-green-100 hover:text-green-700 transition-colors border border-green-200 tooltip-trigger"
                                                             title="Verifikasi Valid"
                                                         >
                                                             <CheckCircle size={18} />
                                                         </button>
                                                         <button
-                                                            onClick={() => handleStatusUpdate(t.id, 'cancelled')}
+                                                            onClick={(e) => { e.stopPropagation(); handleStatusUpdate(t.id, 'cancelled'); }}
                                                             className="p-1.5 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 hover:text-red-700 transition-colors border border-red-200"
                                                             title="Tolak / Tidak Valid"
                                                         >
@@ -1037,7 +1037,7 @@ const TransactionManagement = () => {
                                                     </>
                                                 ) : t.status === 'pending' ? (
                                                     <button
-                                                        onClick={() => handleStatusUpdate(t.id, 'confirmed')}
+                                                        onClick={(e) => { e.stopPropagation(); handleStatusUpdate(t.id, 'confirmed'); }}
                                                         className="p-1.5 hover:bg-green-100 text-gray-400 hover:text-green-600 rounded transition-colors"
                                                         title="Mark as Paid"
                                                     >
