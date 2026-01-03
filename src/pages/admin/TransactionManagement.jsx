@@ -345,6 +345,12 @@ const TransactionManagement = () => {
             if (newStatus === 'confirmed' && transaction.items && transaction.items.includes('(DP)')) {
                 if (transaction.status !== 'dp_confirmed' && transaction.status !== 'final_payment_pending') {
                     updatePayload = { status: 'dp_confirmed' };
+
+                    // --- SEND WA NOTIF (DP) ---
+                    // Wait for state update to settle or just send immediately? Best to send immediately.
+                    // But we need to be carefully it doesn't duplicate.
+                    // Let's call it here.
+                    await handleSendWANotification(transaction, 'dp_confirmed');
                 }
             }
 
@@ -365,6 +371,11 @@ const TransactionManagement = () => {
             // To prevent double counting, simple check if previous status was NOT confirmed/dp_confirmed
             const isBecomingValid = (newStatus === 'confirmed' || updatePayload.status === 'dp_confirmed');
             const wasValid = ['confirmed', 'dp_confirmed', 'success', 'paid', 'final_payment_pending'].includes(transaction.status);
+
+            // --- SEND WA NOTIF (FULL PAYMENT/CONFIRMED) ---
+            if (newStatus === 'confirmed') {
+                await handleSendWANotification(transaction, 'confirmed');
+            }
 
             if (isBecomingValid && !wasValid && transaction.product && transaction.date) {
                 // Extract pax count from items string or participants array
@@ -464,18 +475,26 @@ const TransactionManagement = () => {
             const amountStr = Number(transaction.amount).toLocaleString('id-ID');
             const items = transaction.items || 'Booking Trip';
 
+            // Format Items to look slightly better if it's long
+            const tripName = items.split('(')[0].trim();
+
             let message = '';
+
             if (type === 'pending') {
-                message = `Halo! ✈️\n\nKami mengingatkan pesanan * #${invoiceId}* (${items}) sebesar * Rp ${amountStr}* belum diselesaikan.\n\nMohon segera lakukan pembayaran agar reservasi Anda tidak dibatalkan otomatis.Abaikan pesan ini jika sudah membayar.\n\nTerima kasih! 🙏`;
-            } else if (type === 'success') {
-                message = `Halo! ✅\n\nPembayaran pesanan * #${invoiceId}* (${items}) sebesar * Rp ${amountStr}* telah * BERHASIL * kami terima.\n\nTerima kasih telah mempercayai layanan kami.Sampai jumpa di perjalanan nanti! 👋`;
+                message = `Halo! ✈️\n\nKami mengingatkan tagihan untuk *${tripName}*\nNo. Pesanan: *#${invoiceId}*\nTotal: *Rp ${amountStr}*\n\nStatus: *BELUM DIBAYAR*\n\nMohon segera selesaikan pembayaran untuk mengamankan slot Anda. Abaikan jika sudah membayar.\n\nTerima kasih! 🙏`;
+
+            } else if (type === 'dp_confirmed') {
+                message = `Halo Petualang! 🎒\n\nPembayaran *DOWN PAYMENT (DP)* untuk perjalanan:\n\n📍 *${tripName}*\n📄 Invoice: *#${invoiceId}*\n💰 Nominal: *Rp ${amountStr}*\n\nStatus: *DP DITERIMA* ✅\n\nTerima kasih! Slot Anda telah berhasil diamankan. Mohon segera lakukan *PELUNASAN* sesuai batas waktu yang ditentukan sebelum keberangkatan.\n\nAdmin Adventure Trip`;
+
+            } else if (type === 'success' || type === 'confirmed') {
+                message = `Hore! Pembayaran Lunas! 🎉\n\nTerima kasih, pembayaran *PELUNASAN* Anda telah kami terima.\n\n📍 Trip: *${tripName}*\n📄 Invoice: *#${invoiceId}*\n💰 Total: *Rp ${amountStr}*\n\nStatus: *LUNAS (CONFIRMED)* ✅\n\nE-Ticket Anda sudah terbit dan dapat diakses melalui website/aplikasi di menu *Tiket Saya*.\n\nSampai jumpa di lokasi meeting point! 👋\n\nSalam,\n*Adventure Trip Team*`;
             }
 
             const result = await sendWhatsApp(phone, message);
             if (result.success) {
-                alert(`Notifikasi WhatsApp(${type}) berhasil dikirim ke ${phone} `);
+                alert(`Notifikasi WhatsApp (${type}) berhasil dikirim ke ${phone}`);
             } else {
-                alert(`Gagal mengirim WhatsApp: ${result.error} `);
+                alert(`Gagal mengirim WhatsApp: ${result.error}`);
             }
         } catch (err) {
             alert("Terjadi kesalahan: " + err.message);
