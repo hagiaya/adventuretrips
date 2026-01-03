@@ -262,6 +262,7 @@ const TransactionManagement = () => {
             case 'pending': return 'bg-yellow-50 text-yellow-700 border-yellow-200';
             case 'waiting_proof': return 'bg-orange-50 text-orange-700 border-orange-200';
             case 'verification_pending': return 'bg-blue-50 text-blue-700 border-blue-200 ring-1 ring-blue-300';
+            case 'final_payment_pending': return 'bg-purple-50 text-purple-700 border-purple-200 ring-1 ring-purple-300 animate-pulse';
             case 'cancelled':
             case 'cancel': case 'failed': return 'bg-red-50 text-red-700 border-red-200';
             case 'refunded': return 'bg-purple-50 text-purple-700 border-purple-200 ring-1 ring-purple-300';
@@ -339,9 +340,12 @@ const TransactionManagement = () => {
             let updatePayload = { status: newStatus };
 
             // Logic for DP flow
-            // 1. If currently DP (pending/verification_pending) -> confirmed (DP Lunas)
-            if (newStatus === 'confirmed' && transaction.items.includes('(DP)')) {
-                updatePayload = { status: 'dp_confirmed' }; // Intermediate status
+            // 1. If currently DP -> confirmed (First Stage)
+            // Only apply this if we are NOT already in the second stage (dp_confirmed or final_payment_pending)
+            if (newStatus === 'confirmed' && transaction.items && transaction.items.includes('(DP)')) {
+                if (transaction.status !== 'dp_confirmed' && transaction.status !== 'final_payment_pending') {
+                    updatePayload = { status: 'dp_confirmed' };
+                }
             }
 
             // 2. If currently 'dp_confirmed' -> 'confirmed' (Final Lunas) via custom action
@@ -360,7 +364,7 @@ const TransactionManagement = () => {
             // Decrease quota ONLY when reaching final 'confirmed' or 'dp_confirmed' status for the FIRST time
             // To prevent double counting, simple check if previous status was NOT confirmed/dp_confirmed
             const isBecomingValid = (newStatus === 'confirmed' || updatePayload.status === 'dp_confirmed');
-            const wasValid = ['confirmed', 'dp_confirmed', 'success', 'paid'].includes(transaction.status);
+            const wasValid = ['confirmed', 'dp_confirmed', 'success', 'paid', 'final_payment_pending'].includes(transaction.status);
 
             if (isBecomingValid && !wasValid && transaction.product && transaction.date) {
                 // Extract pax count from items string or participants array
@@ -1148,14 +1152,25 @@ const TransactionManagement = () => {
                                                     >
                                                         <CreditCard size={18} />
                                                     </button>
-                                                ) : t.status === 'dp_confirmed' ? (
-                                                    <button
-                                                        onClick={(e) => { e.stopPropagation(); handleStatusUpdate(t.id, 'lunas_final'); }}
-                                                        className="p-1.5 bg-indigo-50 text-indigo-600 rounded-lg hover:bg-indigo-100 hover:text-indigo-700 transition-colors border border-indigo-200 tooltip-trigger"
-                                                        title="Konfirmasi Pelunasan Akhir"
-                                                    >
-                                                        <CheckCircle size={18} />
-                                                    </button>
+                                                ) : (t.status === 'dp_confirmed' || t.status === 'final_payment_pending') ? (
+                                                    <div className="flex gap-1">
+                                                        <button
+                                                            onClick={(e) => { e.stopPropagation(); handleStatusUpdate(t.id, 'lunas_final'); }}
+                                                            className={`p-1.5 rounded-lg transition-colors border tooltip-trigger ${t.status === 'final_payment_pending' ? 'bg-purple-100 text-purple-700 border-purple-300 animate-pulse' : 'bg-indigo-50 text-indigo-600 border-indigo-200 hover:bg-indigo-100'}`}
+                                                            title="Konfirmasi Pelunasan Akhir (Lunas)"
+                                                        >
+                                                            <CheckCircle size={18} />
+                                                        </button>
+                                                        {t.status === 'final_payment_pending' && (
+                                                            <button
+                                                                onClick={(e) => { e.stopPropagation(); handleStatusUpdate(t.id, 'dp_confirmed'); }}
+                                                                className="p-1.5 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 border border-red-200"
+                                                                title="Tolak Bukti Pelunasan (Kembali ke DP)"
+                                                            >
+                                                                <XCircle size={18} />
+                                                            </button>
+                                                        )}
+                                                    </div>
                                                 ) : (
                                                     <button className="p-1.5 text-gray-300 pointer-events-none">
                                                         <CheckCircle size={18} />

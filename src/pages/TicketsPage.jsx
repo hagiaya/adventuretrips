@@ -58,6 +58,10 @@ const TicketsPage = ({ mobileMode = false }) => {
                 return <span className="bg-orange-100 text-orange-700 px-3 py-1 rounded-full text-xs font-bold border border-orange-200 animate-pulse">Upload Bukti Transfer</span>;
             case 'verification_pending':
                 return <span className="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-xs font-bold border border-blue-200">Menunggu Verifikasi Admin</span>;
+            case 'dp_confirmed':
+                return <span className="bg-indigo-100 text-indigo-700 px-3 py-1 rounded-full text-xs font-bold border border-indigo-200">DP Terkonfirmasi - Segera Lunasi</span>;
+            case 'final_payment_pending':
+                return <span className="bg-purple-100 text-purple-700 px-3 py-1 rounded-full text-xs font-bold border border-purple-200 animate-pulse">Menunggu Verifikasi Pelunasan</span>;
             case 'cancelled':
             case 'failed':
                 return <span className="bg-red-100 text-red-700 px-3 py-1 rounded-full text-xs font-bold border border-red-200">Dibatalkan</span>;
@@ -175,7 +179,11 @@ const TicketsPage = ({ mobileMode = false }) => {
                                             <Link to={`/payment-success/${ticket.id}?mobile=${mobileMode}`} className="px-4 py-2 bg-orange-500 text-white rounded-lg text-xs font-bold shadow-md shadow-orange-500/30 hover:bg-orange-600 transition-all animate-pulse">
                                                 Upload Bukti
                                             </Link>
-                                        ) : ticket.status === 'verification_pending' ? (
+                                        ) : ticket.status === 'dp_confirmed' ? (
+                                            <Link to={`/payment-success/${ticket.id}?mobile=${mobileMode}&type=settlement`} className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-xs font-bold shadow-md shadow-indigo-600/30 hover:bg-indigo-700 transition-all animate-pulse border-2 border-indigo-400/50">
+                                                Bayar Pelunasan
+                                            </Link>
+                                        ) : ticket.status === 'verification_pending' || ticket.status === 'final_payment_pending' ? (
                                             <a
                                                 href={`https://wa.me/6281818433490?text=Halo Admin, saya ingin cek status verifikasi pesanan invoice no: ${ticket.id}`}
                                                 target="_blank"

@@ -30,12 +30,11 @@ const PaymentSuccess = () => {
         try {
             const { data } = await supabase.from('payment_settings').select('manual_accounts').single();
             if (data && data.manual_accounts && Array.isArray(data.manual_accounts) && data.manual_accounts.length > 0) {
-                // Map to match the UI structure if needed, or just use as is
                 const formatted = data.manual_accounts.map(acc => ({
                     bank: acc.bank_name,
                     number: acc.account_number,
                     name: acc.account_holder,
-                    logo: null // Or logic to map bank name to logo
+                    logo: null
                 }));
                 setBankAccounts(formatted);
             }
@@ -84,11 +83,10 @@ const PaymentSuccess = () => {
 
             // 1. Upload Image
             const { error: uploadError } = await supabase.storage
-                .from('receipts') // Ensure this bucket exists in Supabase
+                .from('receipts')
                 .upload(filePath, proofFile);
 
             if (uploadError) {
-                // Determine if error is bucket not found
                 if (uploadError.statusCode === "404") {
                     throw new Error("Bucket 'receipts' tidak ditemukan. Hubungi admin.");
                 }
@@ -101,21 +99,25 @@ const PaymentSuccess = () => {
                 .getPublicUrl(filePath);
 
             // 2. Update Transaction
+            // If current status is 'dp_confirmed', we are paying the remainder -> 'final_payment_pending'
+            let nextStatus = 'verification_pending';
+            if (transaction.status === 'dp_confirmed') {
+                nextStatus = 'final_payment_pending';
+            }
+
             const { error: updateError } = await supabase
                 .from('transactions')
                 .update({
-                    status: 'verification_pending',
+                    status: nextStatus,
                     receipt_url: publicUrl
                 })
                 .eq('id', id);
 
             if (updateError) throw updateError;
 
-            // Refresh data
             await fetchTransaction();
             alert("Bukti transfer berhasil dikirim! Mohon tunggu verifikasi admin.");
 
-            // Redirect to tickets page as requested
             navigate(isMobile ? '/mobile-tickets' : '/tickets');
 
         } catch (error) {
@@ -155,7 +157,7 @@ const PaymentSuccess = () => {
         };
 
         const timerId = setInterval(updateTimer, 1000);
-        updateTimer(); // Initial call
+        updateTimer();
 
         return () => clearInterval(timerId);
     }, [transaction]);
@@ -183,6 +185,8 @@ const PaymentSuccess = () => {
             pending: 'bg-yellow-100 text-yellow-800',
             waiting_proof: 'bg-orange-100 text-orange-800',
             verification_pending: 'bg-blue-100 text-blue-800',
+            dp_confirmed: 'bg-indigo-100 text-indigo-800',
+            final_payment_pending: 'bg-purple-100 text-purple-800',
             cancelled: 'bg-red-100 text-red-700'
         };
 
@@ -191,6 +195,8 @@ const PaymentSuccess = () => {
             pending: 'Menunggu Pembayaran',
             waiting_proof: 'Menunggu Bukti Transfer',
             verification_pending: 'Menunggu Verifikasi Admin',
+            dp_confirmed: 'DP Terkonfirmasi (Bayar Sisa)',
+            final_payment_pending: 'Verifikasi Pelunasan',
             cancelled: 'Dibatalkan'
         };
 
@@ -215,9 +221,7 @@ const PaymentSuccess = () => {
                         <p className="opacity-90 relative z-10">E-Tiket telah diterbitkan.</p>
                     </div>
 
-                    {/* Detail Ticket */}
                     <div className="p-6">
-                        {/* Detailed Price Breakdown */}
                         <div className="bg-white border border-gray-100 rounded-xl shadow-sm p-4 mb-6 relative overflow-hidden">
                             <div className="absolute top-0 right-0 w-20 h-20 bg-primary/5 rounded-bl-full -mr-10 -mt-10"></div>
 
@@ -227,56 +231,36 @@ const PaymentSuccess = () => {
                             </h3>
 
                             {(() => {
-                                // Logic to reverse-calculate breakdown
                                 const totalAmount = transaction.amount || 0;
                                 const discountPct = transaction.product?.discount_percentage || 0;
-
-                                // 1. Extract Tax (Assuming 11%)
-                                // formula: Total = Subtotal * 1.11
                                 const subtotal = totalAmount / 1.11;
                                 const taxAmount = totalAmount - subtotal;
-
-                                // 2. Extract Discount
-                                // formula: Subtotal = OriginalPriceAfterDiscount
-                                // OriginalPriceAfterDiscount = OriginalBase * (1 - discount/100)
-                                // OriginalBase = Subtotal / ((100 - discount)/100)
-
                                 let originalBase = subtotal;
                                 if (discountPct > 0) {
                                     originalBase = subtotal / ((100 - discountPct) / 100);
                                 }
-
                                 const discountAmount = originalBase - subtotal;
 
                                 return (
                                     <div className="space-y-3 text-sm">
-                                        {/* Harga Normal */}
                                         <div className="flex justify-between items-center text-gray-500">
                                             <span>Harga Normal</span>
                                             <span>Rp {Math.round(originalBase).toLocaleString('id-ID')}</span>
                                         </div>
-
-                                        {/* Diskon */}
                                         {discountPct > 0 && (
                                             <div className="flex justify-between items-center text-red-500">
                                                 <span>Diskon ({discountPct}%)</span>
                                                 <span>- Rp {Math.round(discountAmount).toLocaleString('id-ID')}</span>
                                             </div>
                                         )}
-
-                                        {/* After Discount / Subtotal */}
                                         <div className="flex justify-between items-center text-gray-800 font-medium pt-2 border-t border-dashed border-gray-200">
                                             <span>Subtotal</span>
                                             <span>Rp {Math.round(subtotal).toLocaleString('id-ID')}</span>
                                         </div>
-
-                                        {/* Tax */}
                                         <div className="flex justify-between items-center text-gray-500 text-xs">
                                             <span>Layanan & Biaya Lainnya (11%)</span>
                                             <span>+ Rp {Math.round(taxAmount).toLocaleString('id-ID')}</span>
                                         </div>
-
-                                        {/* Grand Total */}
                                         <div className="flex justify-between items-center text-lg font-bold text-primary pt-3 mt-1 border-t border-gray-100">
                                             <span>Total Dibayar</span>
                                             <span>Rp {totalAmount.toLocaleString('id-ID')}</span>
@@ -291,25 +275,19 @@ const PaymentSuccess = () => {
                                 <img src={transaction.product?.image} className="w-16 h-16 rounded-lg object-cover bg-gray-200" alt="Trip" />
                                 <div>
                                     <h3 className="font-bold text-gray-900 text-sm line-clamp-2">{transaction.product?.title}</h3>
-
-                                    {/* Calculated Date Range */}
                                     {(() => {
                                         if (!transaction.date) return <p className="text-xs text-gray-500 mt-1">{transaction.items}</p>;
-
                                         const startDate = parseISO(transaction.date);
                                         let durationDays = 1;
-                                        // Check duration in features or root duration field
                                         const durationStr = transaction.product?.features?.duration || transaction.product?.duration || '';
                                         if (durationStr) {
                                             const match = durationStr.toString().match(/(\d+)/);
                                             if (match) durationDays = parseInt(match[0]);
                                         }
-
                                         const endDate = addDays(startDate, durationDays - 1);
                                         const dateString = durationDays > 1
                                             ? `${format(startDate, 'dd MMM', { locale: idLocale })} - ${format(endDate, 'dd MMM yyyy', { locale: idLocale })}`
                                             : format(startDate, 'dd MMMM yyyy', { locale: idLocale });
-
                                         return (
                                             <div className="flex items-center gap-1.5 mt-1 text-xs text-gray-600 bg-white px-2 py-1 rounded border border-gray-100 w-fit">
                                                 <Calendar size={12} />
@@ -339,43 +317,43 @@ const PaymentSuccess = () => {
         );
     }
 
-    // --- VIEW: WAITING PROOF OR VERIFICATION ---
-    const isVerification = transaction.status === 'verification_pending';
+    // --- VIEW: WAITING PROOF OR VERIFICATION OR SETTLEMENT ---
+    const isVerification = transaction.status === 'verification_pending' || transaction.status === 'final_payment_pending';
+    const isSettlement = transaction.status === 'dp_confirmed';
 
     return (
         <div className="min-h-screen bg-gray-50 py-8 px-4 font-sans">
             <div className="max-w-md mx-auto space-y-4">
 
-                {/* Header Status */}
                 <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 text-center">
                     <div className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 ${isVerification ? 'bg-blue-100 text-blue-600' : 'bg-orange-100 text-orange-600'}`}>
                         {isVerification ? <Clock className="w-8 h-8" /> : <Upload className="w-8 h-8" />}
                     </div>
                     <h1 className="text-xl font-bold text-gray-900 mb-2">
-                        {isVerification ? 'Menunggu Verifikasi' : 'Selesaikan Pembayaran'}
+                        {isVerification ? 'Menunggu Verifikasi' : isSettlement ? 'Pelunasan Tagihan' : 'Selesaikan Pembayaran'}
                     </h1>
                     <p className="text-sm text-gray-500 leading-relaxed px-4">
                         {isVerification
                             ? 'Admin kami sedang mengecek bukti transfer Anda. Proses ini memakan waktu maksimal 1x24 jam.'
-                            : 'Silakan transfer ke salah satu rekening di bawah ini dan upload bukti transfer Anda.'}
+                            : isSettlement
+                                ? 'Silakan lunasi sisa tagihan Anda dengan transfer ke rekening di bawah ini.'
+                                : 'Silakan transfer ke salah satu rekening di bawah ini dan upload bukti transfer Anda.'}
                     </p>
                     <div className="mt-4">
                         <StatusBadge status={transaction.status} />
                     </div>
                 </div>
 
-                {/* Amount to Pay */}
                 {!isVerification && (
                     <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 text-center relative overflow-hidden">
-                        {/* Countdown Banner */}
-                        {timeLeft && (
+                        {transaction.status === 'pending' && timeLeft && (
                             <div className={`mb-4 inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-sm font-bold ${isExpired ? 'bg-red-100 text-red-600' : 'bg-red-50 text-red-600 animate-pulse'}`}>
                                 <Clock size={16} />
                                 <span>{isExpired ? 'Waktu Habis' : `Sisa Waktu: ${timeLeft}`}</span>
                             </div>
                         )}
 
-                        <p className="text-sm text-gray-500 mb-1">Total Tagihan</p>
+                        <p className="text-sm text-gray-500 mb-1">{isSettlement ? 'Sisa Tagihan' : 'Total Tagihan'}</p>
                         <div className="flex items-center justify-center gap-2">
                             <span className="text-3xl font-bold text-gray-900">Rp {transaction.amount.toLocaleString('id-ID')}</span>
                             <button onClick={() => handleCopy(transaction.amount)} className="text-gray-400 hover:text-primary"><Copy size={16} /></button>
@@ -386,7 +364,6 @@ const PaymentSuccess = () => {
                     </div>
                 )}
 
-                {/* Bank Accounts List */}
                 {!isVerification && (
                     <div className="space-y-3">
                         <h3 className="text-sm font-bold text-gray-500 ml-1">Rekening Tujuan</h3>
@@ -407,7 +384,6 @@ const PaymentSuccess = () => {
                     </div>
                 )}
 
-                {/* Upload Section or Proof Display */}
                 <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
                     <h3 className="font-bold text-gray-900 mb-4 flex items-center gap-2">
                         {isVerification ? 'Bukti Transfer Anda' : 'Konfirmasi Pembayaran'}
