@@ -226,40 +226,65 @@ const TripDetail = ({ mobileMode = false }) => {
         basePrice = parseInt(trip?.price?.toString().replace(/[^0-9]/g, '')) || 0;
     }
 
-    // Meeting Point Pricing Logic (Dynamic based on Selected Schedule)
+    // Meeting Point Pricing Logic (Dynamic based on Selected Schedule AND concurrent schedules on same date)
     const meetingPoints = React.useMemo(() => {
         let points = [];
 
-        // 1. Priority: Use Meeting Points from Selected Schedule
-        if (selectedSchedule) {
-            const schedBasePrice = parseInt(selectedSchedule.price) || basePrice;
-            const rawPoints = selectedSchedule.meetingPoints || selectedSchedule.meeting_points || [];
+        // Find all schedules that match the selected date
+        // This handles cases where multiple schedules exist for the same day (e.g. different MPs)
+        const relevantSchedules = selectedSchedule
+            ? schedules.filter(s => s.date === selectedSchedule.date)
+            : [];
 
-            if (Array.isArray(rawPoints) && rawPoints.length > 0) {
-                points = rawPoints.map(mp => {
-                    if (typeof mp === 'object') {
-                        return {
-                            name: mp.name,
-                            price: parseInt(mp.price) || schedBasePrice
-                        };
-                    } else if (typeof mp === 'string') {
-                        return {
-                            name: mp,
-                            price: schedBasePrice
-                        };
-                    }
-                    return null;
-                }).filter(Boolean); // Filter out any nulls
-            }
+        if (relevantSchedules.length > 0) {
+            relevantSchedules.forEach(sched => {
+                // Find global index for switching
+                const sIdx = schedules.indexOf(sched);
+                const schedBasePrice = parseInt(sched.price) || basePrice;
+                const rawPoints = sched.meetingPoints || sched.meeting_points || [];
+
+                if (Array.isArray(rawPoints) && rawPoints.length > 0) {
+                    const schedulePoints = rawPoints.map(mp => {
+                        if (typeof mp === 'object') {
+                            return {
+                                name: mp.name,
+                                price: parseInt(mp.price) || schedBasePrice,
+                                scheduleIndex: sIdx
+                            };
+                        } else if (typeof mp === 'string') {
+                            return {
+                                name: mp,
+                                price: schedBasePrice,
+                                scheduleIndex: sIdx
+                            };
+                        }
+                        return null;
+                    }).filter(Boolean);
+                    points.push(...schedulePoints);
+                }
+            });
         }
+
+        // Deduplicate points by name + price to avoid visual clutter?
+        // Ideally we keep them if they are distinct options. 
+        // If same name and price, better to dedup.
+        const uniquePoints = [];
+        const seen = new Set();
+        points.forEach(p => {
+            const key = `${p.name}-${p.price}`;
+            if (!seen.has(key)) {
+                seen.add(key);
+                uniquePoints.push(p);
+            }
+        });
 
         // 2. Fallback: Check Global Trip Meeting Point (Legacy/Global fallback)
-        if (points.length === 0 && trip && trip.meeting_point) {
-            points.push({ name: trip.meeting_point, price: basePrice });
+        if (uniquePoints.length === 0 && trip && trip.meeting_point) {
+            uniquePoints.push({ name: trip.meeting_point, price: basePrice });
         }
 
-        return points;
-    }, [selectedSchedule, trip, basePrice]);
+        return uniquePoints;
+    }, [selectedSchedule, schedules, trip, basePrice]);
 
     // Determine Base Price based on selection
     // If meeting point selected, use its price. Else use lowest MP price.
@@ -1038,7 +1063,12 @@ const TripDetail = ({ mobileMode = false }) => {
                                             meetingPoints.map((mp, idx) => (
                                                 <div
                                                     key={idx}
-                                                    onClick={() => setSelectedMeetingPoint(mp)}
+                                                    onClick={() => {
+                                                        setSelectedMeetingPoint(mp);
+                                                        if (mp.scheduleIndex !== undefined && mp.scheduleIndex !== selectedScheduleIndex) {
+                                                            setSelectedScheduleIndex(mp.scheduleIndex);
+                                                        }
+                                                    }}
                                                     className={`p-3 rounded-lg border cursor-pointer transition-all flex justify-between items-center ${selectedMeetingPoint?.name === mp.name ? 'border-primary bg-blue-50 ring-1 ring-primary' : 'border-gray-200 hover:border-blue-300'}`}
                                                 >
                                                     <div className="flex items-center gap-2">
