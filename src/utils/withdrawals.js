@@ -61,7 +61,7 @@ export const requestWithdrawal = async (userId, amount, bankData) => {
 /**
  * Approve withdrawal (Admin)
  */
-export const approveWithdrawal = async (withdrawalId) => {
+export const approveWithdrawal = async (withdrawalId, transactionNumber, proofImage) => {
     try {
         const { data: withdrawal, error: fetchError } = await supabase
             .from('withdrawals')
@@ -71,22 +71,81 @@ export const approveWithdrawal = async (withdrawalId) => {
 
         if (fetchError) throw fetchError;
 
-        // Update status
-        const { error: updateError } = await supabase
+        // Update status with transaction details
+        // Try update with new columns
+        let { error: updateError } = await supabase
             .from('withdrawals')
-            .update({ status: 'completed', updated_at: new Date() })
+            .update({
+                status: 'completed',
+                transaction_number: transactionNumber,
+                proof_image: proofImage,
+                updated_at: new Date()
+            })
             .eq('id', withdrawalId);
 
-        if (updateError) throw updateError;
+        // If error might be due to missing columns, try fallback (just status update)
+        if (updateError) {
+            console.warn("Update with transaction details failed (possible missing columns). Retrying with basic status update...", updateError);
 
-        // Send WhatsApp Notification
-        const waMessage = `Halo ${withdrawal.profiles.full_name}! ✅\n\nKabar gembira! Pencairan saldo kamu sebesar *Rp ${withdrawal.amount.toLocaleString('id-ID')}* telah *BERHASIL* dicairkan.\n\nSilakan cek rekening Anda secara berkala. Terima kasih telah menggunakan layanan kami! 🙏`;
+            const { error: fallbackError } = await supabase
+                .from('withdrawals')
+                .update({
+                    status: 'completed',
+                    updated_at: new Date()
+                })
+                .eq('id', withdrawalId);
 
-        if (withdrawal.profiles.phone) {
-            await sendWhatsApp(withdrawal.profiles.phone, waMessage);
+            if (fallbackError) throw fallbackError; // If this fails too, then it's a real error
         }
 
-        return { success: true };
+        // NEW: Auto-verify user KYC if not already verified
+        // We assume that if admin approves withdrawal, they have verified the identity.
+        const { error: kycError } = await supabase
+            .from('profiles')
+            .update({
+                kyc_status: 'verified',
+                is_verified: true,
+                updated_at: new Date()
+            })
+            .eq('id', withdrawal.user_id);
+
+        if (kycError) {
+            console.error("Failed to auto-verify KYC:", kycError);
+            // We don't stop the process, but log the error
+        }
+
+        // Send WhatsApp Notification
+        let waMessage = `Halo ${withdrawal.profiles.full_name}! ✅\n\nKabar gembira! Pencairan saldo kamu sebesar *Rp ${withdrawal.amount.toLocaleString('id-ID')}* telah *BERHASIL* dicairkan.\n\n`;
+
+        // Only add details if no update error occurred initially (meaning columns exist)
+        if (!updateError) {
+            waMessage += `*Detail Transaksi:*\n`;
+            waMessage += `Bank: ${withdrawal.bank_name}\n`;
+            waMessage += `Rekening: ${withdrawal.account_number}\n`;
+            waMessage += `No. Transaksi: ${transactionNumber}\n\n`;
+
+            if (proofImage) {
+                waMessage += `Bukti Transfer: ${proofImage}\n\n`;
+            }
+        } else {
+            waMessage += `Cek rekening Anda untuk memastikan dana sudah masuk.\n\n`;
+        }
+
+        waMessage += `Terima kasih telah menggunakan layanan kami! 🙏`;
+
+        if (withdrawal.profiles.phone) {
+            const waResult = await sendWhatsApp(withdrawal.profiles.phone, waMessage);
+            console.log("WhatsApp Notification Result:", waResult);
+            if (!waResult.success) {
+                console.error("Failed to send WhatsApp:", waResult.error);
+                // Return success false for the notification part, but the withdrawal is technically approved
+                return { success: true, warning: "Withdrawal approved but WhatsApp failed: " + waResult.error };
+            }
+        } else {
+            console.warn("No phone number found for user, skipping WhatsApp notification.");
+        }
+
+        return { success: true, warning: updateError ? "Database schema outdated (missing columns). WhatsApp sent without details." : null };
     } catch (error) {
         console.error("Approve Withdrawal Error:", error);
         return { success: false, error: error.message };

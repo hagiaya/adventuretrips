@@ -707,6 +707,12 @@ const TransactionManagement = () => {
                                             })()}
                                         </p>
                                     </div>
+                                    <div>
+                                        <label className="text-xs font-bold text-gray-400 uppercase">Meeting Point</label>
+                                        <p className="font-medium text-gray-900 mt-1">
+                                            {viewTransaction.meeting_point || 'Akan diinfokan via WhatsApp'}
+                                        </p>
+                                    </div>
                                 </div>
                                 <div className="space-y-4">
                                     <div className="md:col-span-2 bg-gray-50 p-4 rounded-xl border border-gray-100">

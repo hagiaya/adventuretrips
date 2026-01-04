@@ -49,6 +49,12 @@ const WalletModal = ({ isOpen, onClose, userId, currentBalance, onSuccess }) => 
             return;
         }
 
+        // If KYC is not verified, open KYC Modal with withdrawal data
+        if (kycStatus !== 'verified') {
+            setShowKYCModal(true);
+            return;
+        }
+
         setLoading(true);
         try {
             const result = await requestWithdrawal(userId, withdrawalAmount, bankData);
@@ -129,12 +135,8 @@ const WalletModal = ({ isOpen, onClose, userId, currentBalance, onSuccess }) => 
                             </button>
                             <button
                                 onClick={() => {
-                                    if (kycStatus === 'verified') {
-                                        setMode('withdraw');
-                                        setAmount('');
-                                    } else {
-                                        setShowKYCModal(true);
-                                    }
+                                    setMode('withdraw');
+                                    setAmount('');
                                 }}
                                 className="flex flex-col items-center gap-3 p-5 bg-green-50 text-green-700 rounded-2xl border border-green-100 hover:bg-green-100 transition-all group"
                             >
@@ -159,6 +161,7 @@ const WalletModal = ({ isOpen, onClose, userId, currentBalance, onSuccess }) => 
                 );
 
             case 'topup':
+                // ... (unchanged)
                 return (
                     <div className="p-6">
                         <div className="flex items-center gap-4 mb-6">
@@ -275,7 +278,7 @@ const WalletModal = ({ isOpen, onClose, userId, currentBalance, onSuccess }) => 
                                 disabled={loading}
                                 className="w-full py-4 bg-primary text-white rounded-2xl font-black text-sm shadow-lg shadow-primary/20 hover:bg-pink-600 transition-all flex items-center justify-center gap-2"
                             >
-                                {loading ? <Loader className="animate-spin" size={18} /> : 'Ajukan Penarikan'}
+                                {loading ? <Loader className="animate-spin" size={18} /> : kycStatus === 'verified' ? 'Ajukan Penarikan' : 'Verifikasi KYC & Tarik'}
                             </button>
                         </form>
                     </div>
@@ -314,9 +317,14 @@ const WalletModal = ({ isOpen, onClose, userId, currentBalance, onSuccess }) => 
                 isOpen={showKYCModal}
                 onClose={() => setShowKYCModal(false)}
                 userId={userId}
+                withdrawalData={amount ? { amount, ...bankData } : null}
                 onSuccess={() => {
                     fetchKycStatus();
                     setShowKYCModal(false);
+                    if (amount) {
+                        // If we came here from withdrawal, switch to success mode
+                        setMode('success');
+                    }
                 }}
             />
         </div>

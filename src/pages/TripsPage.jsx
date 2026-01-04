@@ -310,7 +310,7 @@ const TripsPage = ({ mobileMode = false, category: propCategory }) => {
                             )}
                         </h1>
                         <p className="text-gray-500 max-w-2xl mx-auto mb-6">
-                            {searchQuery ? `Menampilkan ${filteredTrips.length} hasil pencarian.` : 'Temukan pengalaman terbaik untuk perjalanan Anda.'}
+                            {searchQuery ? `Menampilkan ${filteredTrips.length} hasil pencarian.` : 'Temukan selera petualangmu! di Adventure Trip Indonesia! Follow Instagram, TikTok dan Download Aplikasi Adventure Trip untuk para adventure agar setiap hari penuh eksplorasi.'}
                         </p>
 
                         {/* Mobile Sticky Filter Button (Responsive Web) */}

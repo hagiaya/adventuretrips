@@ -226,87 +226,40 @@ const TripDetail = ({ mobileMode = false }) => {
         basePrice = parseInt(trip?.price?.toString().replace(/[^0-9]/g, '')) || 0;
     }
 
-    // Meeting Point Pricing Logic (Always Aggregate)
+    // Meeting Point Pricing Logic (Dynamic based on Selected Schedule)
     const meetingPoints = React.useMemo(() => {
-        // Use a Map to ensure uniqueness by Name, preserving the Price
-        const uniquePoints = new Map();
+        let points = [];
 
-        // Helper to add point
-        const addPoint = (name, price) => {
-            if (!name || typeof name !== 'string' || !name.trim()) return;
-            const cleanName = name.trim();
-            // Only add if not exists (preserve first found price, usually fine)
-            if (!uniquePoints.has(cleanName)) {
-                uniquePoints.set(cleanName, { name: cleanName, price: parseInt(price) || basePrice });
-            }
-        };
-
-        // 1. Scan ALL Schedules to collect every possible meeting point
-        if (schedules && schedules.length > 0) {
-            schedules.forEach(sched => {
-                const schedBasePrice = parseInt(sched.price) || basePrice;
-                const rawPoints = sched.meetingPoints || sched.meeting_points || [];
-                if (Array.isArray(rawPoints)) {
-                    rawPoints.forEach(mp => {
-                        if (typeof mp === 'object') {
-                            addPoint(mp.name, mp.price || schedBasePrice);
-                        } else if (typeof mp === 'string') {
-                            addPoint(mp, schedBasePrice);
-                        }
-                    });
-                }
-            });
-        }
-
-        // 2. Check Global Trip Meeting Point (Legacy/Global fallback)
-        if (trip && trip.meeting_point) {
-            addPoint(trip.meeting_point, basePrice);
-        }
-
-        return Array.from(uniquePoints.values());
-
-        /* 
-        // 1. Try Selected Schedule
+        // 1. Priority: Use Meeting Points from Selected Schedule
         if (selectedSchedule) {
-            // Support both camelCase (frontend app) and snake_case (standard DB)
+            const schedBasePrice = parseInt(selectedSchedule.price) || basePrice;
             const rawPoints = selectedSchedule.meetingPoints || selectedSchedule.meeting_points || [];
 
             if (Array.isArray(rawPoints) && rawPoints.length > 0) {
-                points = rawPoints.map((mp) => {
-                    if (typeof mp === 'object' && mp.name) return { ...mp, price: parseInt(mp.price) || basePrice }; // Ensure price is number
-                    if (typeof mp === 'string') return { name: mp, price: basePrice };
-                    return { name: 'Unknown Location', price: basePrice };
-                });
+                points = rawPoints.map(mp => {
+                    if (typeof mp === 'object') {
+                        return {
+                            name: mp.name,
+                            price: parseInt(mp.price) || schedBasePrice
+                        };
+                    } else if (typeof mp === 'string') {
+                        return {
+                            name: mp,
+                            price: schedBasePrice
+                        };
+                    }
+                    return null;
+                }).filter(Boolean); // Filter out any nulls
             }
         }
 
-        // 2. Fallback: Check if global meeting_point exists (legacy support)
+        // 2. Fallback: Check Global Trip Meeting Point (Legacy/Global fallback)
         if (points.length === 0 && trip && trip.meeting_point) {
-            points = [{ name: trip.meeting_point, price: basePrice }];
+            points.push({ name: trip.meeting_point, price: basePrice });
         }
 
-        // 3. AGGREGATE FALLBACK: If still empty, collect unique points from ALL schedules
-        // This ensures if the user added 5 meeting points to *any* schedule, they show up rather than empty
-        if (points.length === 0 && schedules.length > 0) {
-            const allPointsMap = new Map();
-            schedules.forEach(sched => {
-                const schedPoints = sched.meetingPoints || sched.meeting_points || [];
-                if (Array.isArray(schedPoints)) {
-                    schedPoints.forEach(mp => {
-                        const name = typeof mp === 'object' ? mp.name : mp;
-                        const price = typeof mp === 'object' ? (parseInt(mp.price) || basePrice) : basePrice;
-
-                        if (name && typeof name === 'string' && name.trim() !== '' && !allPointsMap.has(name)) {
-                            allPointsMap.set(name, { name, price });
-                        }
-                    });
-                }
-            });
-            points = Array.from(allPointsMap.values());
-        }
-
-        return points; */
-    }, [trip, schedules, basePrice]);
+        return points;
+    }, [selectedSchedule, trip, basePrice]);
 
     // Determine Base Price based on selection
     // If meeting point selected, use its price. Else use lowest MP price.
@@ -1286,7 +1239,9 @@ const TripDetail = ({ mobileMode = false }) => {
                                             <>
                                                 {/* 1. Normal Price (Base from MP) */}
                                                 <div className="flex justify-between">
-                                                    <span className="text-gray-500">Harga Normal ({pax} Pax)</span>
+                                                    <span className="text-gray-500 whitespace-nowrap">
+                                                        Harga Normal ({pax} Pax x Rp {Number(pricePerPaxFinal).toLocaleString('id-ID')})
+                                                    </span>
                                                     <span className="font-medium text-gray-900">
                                                         Rp {totalNormalPrice.toLocaleString('id-ID')}
                                                     </span>

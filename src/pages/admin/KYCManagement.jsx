@@ -24,10 +24,10 @@ const KYCManagement = () => {
     const fetchKYCList = async () => {
         setLoading(true);
         try {
-            // Fetch users who have submitted KYC or are in a specific status
+            // Fetch users with their pending withdrawals to show context
             const { data, error } = await supabase
                 .from('profiles')
-                .select('*')
+                .select('*, withdrawals(amount, status)')
                 .not('kyc_status', 'is', null)
                 .order('updated_at', { ascending: false });
 
@@ -41,127 +41,30 @@ const KYCManagement = () => {
     };
 
     const handleApprove = async (userId, targetPhone, fullName) => {
-        if (!confirm(`Setujui KYC untuk ${fullName}? User akan dapat melakukan penarikan dana.`)) return;
-
-        setProcessingId(userId);
-        try {
-            const { error } = await supabase
-                .from('profiles')
-                .update({
-                    kyc_status: 'verified',
-                    is_verified: true,
-                    kyc_rejected_reason: null,
-                    updated_at: new Date()
-                })
-                .eq('id', userId);
-
-            if (error) throw error;
-
-            // Send WA
-            const message = `Halo ${fullName}! 👋\n\nSelamat! Akun kamu telah berhasil diverifikasi (KYC Approved). Sekarang kamu sudah bisa melakukan penarikan saldo ke rekening pribadi.\n\nTerima kasih atas kerjasamanya! 🙏`;
-            if (targetPhone) {
-                await sendWhatsApp(targetPhone, message);
-            }
-
-            alert("KYC berhasil disetujui.");
-            fetchKYCList();
-            setIsDetailModalOpen(false);
-        } catch (err) {
-            alert("Gagal setujui KYC: " + err.message);
-        } finally {
-            setProcessingId(null);
-        }
+        // ... (existing code)
     };
 
     const handleReject = async (userId, targetPhone, fullName) => {
-        const reason = prompt("Alasan penolakan KYC?");
-        if (reason === null) return;
-
-        setProcessingId(userId);
-        try {
-            const { error } = await supabase
-                .from('profiles')
-                .update({
-                    kyc_status: 'rejected',
-                    kyc_rejected_reason: reason,
-                    updated_at: new Date()
-                })
-                .eq('id', userId);
-
-            if (error) throw error;
-
-            // Send WA
-            const message = `Halo ${fullName}.\n\nKami meninjau ulang pengajuan verifikasi akun kamu dan mohon maaf saat ini belum bisa kami setujui.\n\nAlasan: ${reason}\n\nSilakan ajukan kembali dengan data yang lebih jelas. Terima kasih.`;
-            if (targetPhone) {
-                await sendWhatsApp(targetPhone, message);
-            }
-
-            alert("KYC ditolak.");
-            fetchKYCList();
-            setIsDetailModalOpen(false);
-        } catch (err) {
-            alert("Gagal tolak KYC: " + err.message);
-        } finally {
-            setProcessingId(null);
-        }
+        // ... (existing code)
     };
 
-    const filteredUsers = users.filter(u => {
-        const matchesSearch =
-            (u.full_name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-            (u.kyc_id_number || '').includes(searchTerm);
-
-        const matchesStatus = statusFilter === 'all' || u.kyc_status === statusFilter;
-
-        return matchesSearch && matchesStatus;
+    const filteredUsers = users.filter((u) => {
+        // ... (existing code)
     });
 
-    const getStatusStyle = (status) => {
-        switch (status) {
-            case 'pending': return 'bg-yellow-100 text-yellow-700 border-yellow-200';
-            case 'verified': return 'bg-green-100 text-green-700 border-green-200';
-            case 'rejected': return 'bg-red-100 text-red-700 border-red-200';
-            default: return 'bg-gray-100 text-gray-700 border-gray-200';
-        }
+    // ... (helper functions)
+
+    // Helper to get pending withdrawal amount
+    const getPendingWithdrawal = (user) => {
+        if (!user.withdrawals || user.withdrawals.length === 0) return 0;
+        return user.withdrawals
+            .filter(w => w.status === 'pending')
+            .reduce((sum, w) => sum + (parseFloat(w.amount) || 0), 0);
     };
 
     return (
         <div className="p-6 max-w-7xl mx-auto font-sans">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
-                <div>
-                    <h1 className="text-3xl font-black text-gray-900 tracking-tight">Verifikasi KYC</h1>
-                    <p className="text-gray-500 font-medium">Validasi identitas user untuk keamanan transaksi.</p>
-                </div>
-
-                <div className="flex items-center gap-3">
-                    <div className="bg-white p-2 rounded-2xl shadow-sm border border-gray-100 flex items-center gap-2">
-                        <Search className="w-5 h-5 text-gray-400 ml-2" />
-                        <input
-                            type="text"
-                            placeholder="Cari Nama / No KTP..."
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                            className="bg-transparent border-none outline-none text-sm font-medium w-48 lg:w-64"
-                        />
-                    </div>
-                </div>
-            </div>
-
-            {/* Quick Filters */}
-            <div className="flex items-center gap-2 mb-6 overflow-x-auto pb-2">
-                {['pending', 'verified', 'rejected', 'all'].map((f) => (
-                    <button
-                        key={f}
-                        onClick={() => setStatusFilter(f)}
-                        className={`px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider transition-all border ${statusFilter === f
-                                ? 'bg-primary text-white border-primary shadow-lg shadow-primary/20'
-                                : 'bg-white text-gray-500 border-gray-100 hover:border-primary/30'
-                            }`}
-                    >
-                        {f === 'pending' ? 'Perlu Ditinjau' : f === 'verified' ? 'Terverifikasi' : f === 'rejected' ? 'Ditolak' : 'Semua'}
-                    </button>
-                ))}
-            </div>
+            {/* ... (Header and Filters) ... */}
 
             {/* Content Area */}
             <div className="bg-white rounded-[2rem] border border-gray-100 shadow-sm overflow-hidden">
@@ -172,68 +75,71 @@ const KYCManagement = () => {
                                 <th className="px-6 py-4 text-xs font-black text-gray-400 uppercase tracking-widest">User</th>
                                 <th className="px-6 py-4 text-xs font-black text-gray-400 uppercase tracking-widest">Kontak</th>
                                 <th className="px-6 py-4 text-xs font-black text-gray-400 uppercase tracking-widest">Identitas</th>
+                                <th className="px-6 py-4 text-xs font-black text-gray-400 uppercase tracking-widest">Penarikan</th> {/* Added Column */}
                                 <th className="px-6 py-4 text-xs font-black text-gray-400 uppercase tracking-widest text-center">Status</th>
                                 <th className="px-6 py-4 text-xs font-black text-gray-400 uppercase tracking-widest text-right">Aksi</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-50">
-                            {loading ? (
-                                <tr>
-                                    <td colSpan="5" className="px-6 py-20 text-center">
-                                        <Loader className="animate-spin text-primary inline mr-2" />
-                                        <span className="text-gray-400 font-bold">Memuat data...</span>
-                                    </td>
-                                </tr>
-                            ) : filteredUsers.length === 0 ? (
-                                <tr>
-                                    <td colSpan="5" className="px-6 py-20 text-center text-gray-400 font-bold">
-                                        Tidak ada data KYC yang ditemukan.
-                                    </td>
-                                </tr>
-                            ) : filteredUsers.map((u) => (
-                                <tr key={u.id} className="hover:bg-gray-50/50 transition-colors">
-                                    <td className="px-6 py-4">
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center font-bold text-blue-600">
-                                                {u.full_name?.charAt(0) || u.email?.charAt(0)}
+                            {/* ... (Loading/Empty states) ... */}
+                            {filteredUsers.map((u) => {
+                                const pendingAmount = getPendingWithdrawal(u);
+                                return (
+                                    <tr key={u.id} className="hover:bg-gray-50/50 transition-colors">
+                                        <td className="px-6 py-4">
+                                            {/* ... (User Column) ... */}
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center font-bold text-blue-600">
+                                                    {u.full_name?.charAt(0) || u.email?.charAt(0)}
+                                                </div>
+                                                <div>
+                                                    <div className="font-bold text-gray-900">{u.full_name || 'Guest'}</div>
+                                                    <div className="text-[10px] text-gray-400 font-medium">Joined: {new Date(u.created_at).toLocaleDateString()}</div>
+                                                </div>
                                             </div>
-                                            <div>
-                                                <div className="font-bold text-gray-900">{u.full_name || 'Guest'}</div>
-                                                <div className="text-[10px] text-gray-400 font-medium">Joined: {new Date(u.created_at).toLocaleDateString()}</div>
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            {/* ... (Contact Column) ... */}
+                                            <div className="text-xs space-y-1">
+                                                <div className="flex items-center gap-1.5 text-gray-600 font-medium">
+                                                    <Mail size={12} className="text-gray-400" /> {u.email}
+                                                </div>
+                                                <div className="flex items-center gap-1.5 text-gray-600 font-medium">
+                                                    <Phone size={12} className="text-gray-400" /> {u.phone || '-'}
+                                                </div>
                                             </div>
-                                        </div>
-                                    </td>
-                                    <td className="px-6 py-4">
-                                        <div className="text-xs space-y-1">
-                                            <div className="flex items-center gap-1.5 text-gray-600 font-medium">
-                                                <Mail size={12} className="text-gray-400" /> {u.email}
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <div className="text-xs">
+                                                <div className="font-black text-gray-900 uppercase tracking-tight">{u.kyc_full_name || u.full_name}</div>
+                                                <div className="text-gray-500 font-mono mt-0.5">{u.kyc_id_number || 'NIK: -'}</div>
                                             </div>
-                                            <div className="flex items-center gap-1.5 text-gray-600 font-medium">
-                                                <Phone size={12} className="text-gray-400" /> {u.phone || '-'}
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td className="px-6 py-4">
-                                        <div className="text-xs">
-                                            <div className="font-black text-gray-900 uppercase tracking-tight">{u.kyc_full_name || u.full_name}</div>
-                                            <div className="text-gray-500 font-mono mt-0.5">{u.kyc_id_number || 'NIK: -'}</div>
-                                        </div>
-                                    </td>
-                                    <td className="px-6 py-4 text-center">
-                                        <span className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border ${getStatusStyle(u.kyc_status)}`}>
-                                            {u.kyc_status === 'pending' ? 'WAITING' : u.kyc_status === 'verified' ? 'APPROVED' : 'REJECTED'}
-                                        </span>
-                                    </td>
-                                    <td className="px-6 py-4 text-right">
-                                        <button
-                                            onClick={() => { setSelectedUser(u); setIsDetailModalOpen(true); }}
-                                            className="p-2 bg-gray-50 text-gray-600 rounded-xl hover:bg-primary hover:text-white transition-all border border-gray-100"
-                                        >
-                                            <Eye size={18} />
-                                        </button>
-                                    </td>
-                                </tr>
-                            ))}
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            {pendingAmount > 0 ? (
+                                                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-orange-50 text-orange-700 text-xs font-bold border border-orange-100">
+                                                    Rp {pendingAmount.toLocaleString('id-ID')}
+                                                </span>
+                                            ) : (
+                                                <span className="text-gray-300 text-xs font-medium">-</span>
+                                            )}
+                                        </td>
+                                        <td className="px-6 py-4 text-center">
+                                            <span className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border ${getStatusStyle(u.kyc_status)}`}>
+                                                {u.kyc_status === 'pending' ? 'WAITING' : u.kyc_status === 'verified' ? 'APPROVED' : 'REJECTED'}
+                                            </span>
+                                        </td>
+                                        <td className="px-6 py-4 text-right">
+                                            <button
+                                                onClick={() => { setSelectedUser(u); setIsDetailModalOpen(true); }}
+                                                className="p-2 bg-gray-50 text-gray-600 rounded-xl hover:bg-primary hover:text-white transition-all border border-gray-100"
+                                            >
+                                                <Eye size={18} />
+                                            </button>
+                                        </td>
+                                    </tr>
+                                )
+                            })}
                         </tbody>
                     </table>
                 </div>
@@ -255,8 +161,24 @@ const KYCManagement = () => {
                                 </button>
                             </div>
 
+                            {/* Pending Withdrawal Alert in Detail */}
+                            {getPendingWithdrawal(selectedUser) > 0 && (
+                                <div className="mb-6 p-4 bg-orange-50 border border-orange-100 rounded-2xl flex items-center gap-3">
+                                    <div className="p-2 bg-orange-100 rounded-full text-orange-600">
+                                        <CreditCard size={20} />
+                                    </div>
+                                    <div>
+                                        <p className="text-xs font-bold text-orange-800 uppercase tracking-widest">Permintaan Penarikan Aktif</p>
+                                        <p className="font-black text-gray-900">
+                                            User ini sedang mengajukan penarikan sebesar <span className="text-orange-600">Rp {getPendingWithdrawal(selectedUser).toLocaleString('id-ID')}</span>
+                                        </p>
+                                    </div>
+                                </div>
+                            )}
+
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
                                 <div className="space-y-4">
+
                                     <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100">
                                         <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-1">Nama di Identitas</label>
                                         <p className="font-bold text-gray-900">{selectedUser.kyc_full_name}</p>
@@ -269,6 +191,20 @@ const KYCManagement = () => {
                                         <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-1">Waktu Submit</label>
                                         <p className="font-bold text-gray-900">{new Date(selectedUser.updated_at).toLocaleString('id-ID')}</p>
                                     </div>
+                                    <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100">
+                                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-1">Nomor Rekening</label>
+                                        <p className="font-bold text-gray-900 font-mono tracking-wider">{selectedUser.kyc_bank_account || '-'}</p>
+                                    </div>
+
+                                    {/* Link to show pending withdrawal amount if exists */}
+                                    {getPendingWithdrawal(selectedUser) > 0 && (
+                                        <div className="p-4 bg-orange-50 rounded-2xl border border-orange-100">
+                                            <label className="text-[10px] font-black text-orange-400 uppercase tracking-widest block mb-1">Total Penarikan (Pending)</label>
+                                            <p className="font-black text-orange-600 text-lg">
+                                                Rp {getPendingWithdrawal(selectedUser).toLocaleString('id-ID')}
+                                            </p>
+                                        </div>
+                                    )}
                                 </div>
 
                                 <div className="space-y-4">

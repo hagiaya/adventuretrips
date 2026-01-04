@@ -40,9 +40,8 @@ const AdminLayout = () => {
         { path: '/admin/transactions', icon: <Receipt size={20} />, label: 'Manajemen Transaksi' },
         { path: '/admin/private-trips', icon: <Crown size={20} />, label: 'Private Trips' },
         { path: '/admin/users', icon: <User size={20} />, label: 'Manajemen Pengguna' },
-        { path: '/admin/kyc', icon: <ShieldCheck size={20} />, label: 'Verifikasi KYC' },
+        { path: '/admin/finance', icon: <Library size={20} />, label: 'Keuangan & Verifikasi' },
         { path: '/admin/partners', icon: <Image size={20} />, label: 'Manajemen Partner' },
-        { path: '/admin/withdrawals', icon: <Library size={20} />, label: 'Manajemen Penarikan' },
         { path: '/admin/payment-settings', icon: <Receipt size={20} />, label: 'Pengaturan Pembayaran' },
         { path: '/admin/settings', icon: <Settings size={20} />, label: 'Pengaturan Sistem' },
     ];

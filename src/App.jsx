@@ -52,7 +52,17 @@ import AccommodationCategoryManagement from './pages/admin/AccommodationCategory
 import PopupManagement from './pages/admin/PopupManagement';
 import ContentManagement from './pages/admin/ContentManagement';
 import WithdrawalManagement from './pages/admin/WithdrawalManagement';
-import KYCManagement from './pages/admin/KYCManagement';
+import FinanceManagement from './pages/admin/FinanceManagement';
+
+// ... (other imports remain, just placing this here for context of where to insert, essentially adding one import)
+// But to use replace_file_content effectively I should target specific blocks.
+
+// Block 1: Import
+// Block 2: Routes
+
+// Let's do it in one go if they are close, or separate.
+// Imports are at top. Routes at bottom. Separate chunks.
+
 
 import LoginModal from './components/LoginModal'; // Moved to top
 import PaymentSuccess from './pages/PaymentSuccess'; // Moved to top
@@ -209,9 +219,8 @@ const App = () => {
             <Route path="/admin/transactions" element={<TransactionManagement />} />
             <Route path="/admin/private-trips" element={<PrivateTripManagement />} />
             <Route path="/admin/users" element={<UserManagement />} />
+            <Route path="/admin/finance" element={<FinanceManagement />} />
             <Route path="/admin/partners" element={<PartnerManagement />} />
-            <Route path="/admin/withdrawals" element={<WithdrawalManagement />} />
-            <Route path="/admin/kyc" element={<KYCManagement />} />
             <Route path="/admin/payment-settings" element={<PaymentSettings />} />
             <Route path="/admin/settings" element={<SystemSettings />} />
             <Route path="/admin/stays/categories" element={<AccommodationCategoryManagement />} />

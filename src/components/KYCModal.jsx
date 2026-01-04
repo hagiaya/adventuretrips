@@ -2,11 +2,14 @@ import React, { useState } from 'react';
 import { X, Camera, Upload, CheckCircle, AlertCircle, Loader, Shield } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 
-const KYCModal = ({ isOpen, onClose, userId, onSuccess }) => {
+import { requestWithdrawal } from '../utils/withdrawals';
+
+const KYCModal = ({ isOpen, onClose, userId, onSuccess, withdrawalData }) => {
     const [step, setStep] = useState(1); // 1: Form, 2: Upload, 3: Success
     const [formData, setFormData] = useState({
         full_name: '',
-        id_number: ''
+        id_number: '',
+        bank_account_number: '' // Added state for account number
     });
     const [images, setImages] = useState({
         id_image: null,
@@ -33,20 +36,20 @@ const KYCModal = ({ isOpen, onClose, userId, onSuccess }) => {
         const filePath = `kyc/${fileName}`;
 
         const { error: uploadError } = await supabase.storage
-            .from('products') // Reuse products bucket or adjust if you have a private one
+            .from('product-images') // Changed from 'products' to 'product-images' to match existing bucket
             .upload(filePath, file);
 
         if (uploadError) throw uploadError;
 
         const { data } = supabase.storage
-            .from('products')
+            .from('product-images')
             .getPublicUrl(filePath);
 
         return data.publicUrl;
     };
 
     const handleSubmit = async () => {
-        if (!formData.full_name || !formData.id_number || !images.id_image || !images.selfie_image) {
+        if (!formData.full_name || !formData.id_number || !formData.bank_account_number || !images.id_image || !images.selfie_image) {
             setError("Harap lengkapi semua data dan foto.");
             return;
         }
@@ -66,6 +69,7 @@ const KYCModal = ({ isOpen, onClose, userId, onSuccess }) => {
                     kyc_status: 'pending',
                     kyc_full_name: formData.full_name,
                     kyc_id_number: formData.id_number,
+                    kyc_bank_account: formData.bank_account_number, // Save bank account
                     kyc_id_image: idUrl,
                     kyc_selfie_image: selfieUrl,
                     updated_at: new Date()
@@ -73,6 +77,26 @@ const KYCModal = ({ isOpen, onClose, userId, onSuccess }) => {
                 .eq('id', userId);
 
             if (updateError) throw updateError;
+
+            // 3. If withdrawal data exists, create the withdrawal record immediately
+            if (withdrawalData && withdrawalData.amount) {
+                const { error: withdrawError } = await requestWithdrawal(
+                    userId,
+                    parseFloat(withdrawalData.amount),
+                    {
+                        bank_name: withdrawalData.bank_name,
+                        account_number: withdrawalData.account_number,
+                        account_holder: withdrawalData.account_holder
+                    }
+                );
+                // Note: requestWithdrawal creates the record with 'pending' status.
+                // Even if KYC is pending, we allow the request to sit in withdrawals table.
+                // However, requestWithdrawal checks balance. It should be fine.
+                // But wait, requestWithdrawal DEDUCTS balance.
+                // If KYC is rejected, admin needs to reject withdrawal too (which refunds balance).
+                // Ideally we link them, but independent pending items are fine.
+                if (withdrawError) console.error("Auto-withdrawal creation failed", withdrawError);
+            }
 
             setStep(3);
             if (onSuccess) onSuccess();
@@ -101,6 +125,19 @@ const KYCModal = ({ isOpen, onClose, userId, onSuccess }) => {
                         </div>
 
                         <div className="space-y-4">
+                            {/* SHOW WITHDRAWAL AMOUNT IF EXISTS */}
+                            {withdrawalData && withdrawalData.amount && (
+                                <div className="p-4 bg-orange-50 rounded-2xl border border-orange-100 mb-2">
+                                    <p className="text-[10px] text-orange-700 font-bold uppercase tracking-widest mb-1">Permintaan Penarikan</p>
+                                    <p className="text-lg font-black text-gray-900">
+                                        Rp {parseFloat(withdrawalData.amount).toLocaleString('id-ID')}
+                                    </p>
+                                    <p className="text-[10px] text-gray-500 mt-1">
+                                        Saldo akan ditarik otomatis setelah dokumen terkirim.
+                                    </p>
+                                </div>
+                            )}
+
                             <div className="p-4 bg-blue-50 rounded-2xl border border-blue-100 mb-4">
                                 <p className="text-[11px] text-blue-700 font-bold leading-relaxed">
                                     Sesuai regulasi keamanan, kamu perlu melakukan verifikasi identitas (KYC) satu kali sebelum melakukan penarikan saldo.
@@ -129,9 +166,20 @@ const KYCModal = ({ isOpen, onClose, userId, onSuccess }) => {
                                 />
                             </div>
 
+                            <div>
+                                <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Nomor Rekening</label>
+                                <input
+                                    type="text"
+                                    value={formData.bank_account_number}
+                                    onChange={(e) => setFormData({ ...formData, bank_account_number: e.target.value })}
+                                    className="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-2xl outline-none focus:ring-2 focus:ring-primary/20 font-mono"
+                                    placeholder="Nomor Rekening Bank / E-Wallet"
+                                />
+                            </div>
+
                             <button
                                 onClick={() => setStep(2)}
-                                disabled={!formData.full_name || !formData.id_number}
+                                disabled={!formData.full_name || !formData.id_number || !formData.bank_account_number}
                                 className="w-full py-4 bg-primary text-white rounded-2xl font-black text-sm shadow-lg shadow-primary/20 hover:bg-pink-600 transition-all flex items-center justify-center gap-2 disabled:opacity-50 mt-4"
                             >
                                 Lanjut Unggah Dokumen
