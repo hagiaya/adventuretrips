@@ -1270,7 +1270,7 @@ const TripDetail = ({ mobileMode = false }) => {
                                                 {/* 1. Normal Price (Base from MP) */}
                                                 <div className="flex justify-between">
                                                     <span className="text-gray-500 whitespace-nowrap">
-                                                        Harga Normal ({pax} Pax x Rp {Number(pricePerPaxFinal).toLocaleString('id-ID')})
+                                                        Harga x Jumlah ({pax} Pax x Rp {Number(pricePerPaxNormal).toLocaleString('id-ID')})
                                                     </span>
                                                     <span className="font-medium text-gray-900">
                                                         Rp {totalNormalPrice.toLocaleString('id-ID')}
